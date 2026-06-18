@@ -12,6 +12,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Caută',
+          tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
