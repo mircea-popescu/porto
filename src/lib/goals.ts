@@ -121,6 +121,59 @@ export async function createGoal(input: CreateGoalInput): Promise<string> {
 }
 
 // ===========================================================================
+// Tip B — intrări de valoare (PRD §3.2)
+// ===========================================================================
+
+export type ValueEntry = Database['public']['Tables']['value_entries']['Row'];
+type ValueEntryInsert = Database['public']['Tables']['value_entries']['Insert'];
+
+/** Intrările unui goal Tip B, cele mai recente primele. */
+export async function listEntries(goalId: string): Promise<ValueEntry[]> {
+  const { data, error } = await supabase
+    .from('value_entries')
+    .select('*')
+    .eq('goal_id', goalId)
+    .order('entry_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function addEntry(
+  goalId: string,
+  value: number,
+  entryDate: string,
+  note: string | null,
+): Promise<void> {
+  const userId = await currentUserId();
+  const row: ValueEntryInsert = {
+    goal_id: goalId,
+    user_id: userId,
+    value,
+    entry_date: entryDate,
+    note: note?.trim() || null,
+  };
+  const { error } = await supabase.from('value_entries').insert(row);
+  if (error) throw error;
+}
+
+export async function updateEntry(
+  id: string,
+  fields: { value: number; entryDate: string; note: string | null },
+): Promise<void> {
+  const { error } = await supabase
+    .from('value_entries')
+    .update({ value: fields.value, entry_date: fields.entryDate, note: fields.note?.trim() || null })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteEntry(id: string): Promise<void> {
+  const { error } = await supabase.from('value_entries').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ===========================================================================
 // Tip A — confirmări zilnice (PRD §3.1)
 // ===========================================================================
 

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { ProgressBar } from '@/components/progress-bar';
+import { ValueEntries } from '@/components/value-entries';
 import { confirmAction, notify } from '@/lib/dialog';
 import {
   computeDailyState,
@@ -138,6 +139,9 @@ export default function GoalDetail() {
               ? `${progress} / ${goal.target_days} zile  ·  ${Math.round(ratio * 100)}%`
               : `${progress} / ${goal.target_value}  ·  ${Math.round(ratio * 100)}%`}
           </Text>
+          {goal.type === 'value' && goal.completed_in_days != null && (
+            <Text style={styles.reached}>🎉 Target atins în {goal.completed_in_days} zile</Text>
+          )}
         </View>
 
         {goal.type === 'daily' ? (
@@ -150,12 +154,7 @@ export default function GoalDetail() {
             onReset={onReset}
           />
         ) : (
-          <View style={styles.card}>
-            <Text style={styles.muted}>
-              Adăugarea și editarea intrărilor pentru goalurile de tip valoare vine la pasul
-              următor (pasul 6).
-            </Text>
-          </View>
+          <ValueEntries goalId={id} onChanged={load} />
         )}
 
         <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} disabled={busy}>
@@ -262,6 +261,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   progressBlock: { gap: 8 },
   progressText: { fontSize: 14, color: '#475569', fontWeight: '500' },
+  reached: { fontSize: 14, color: '#16a34a', fontWeight: '600' },
   card: {
     backgroundColor: '#f8fafc',
     borderRadius: 12,
