@@ -289,24 +289,31 @@ porto/
 
 ## 13. Faze de implementare
 
-### Faza 1 — Core (MVP funcțional, single-player)
-1. Setup repo, Supabase, Expo (✅ done)
-2. Migrări DB complete (toate tabelele, inclusiv Faza 2 și Ops)
-3. Autentificare (email + parolă)
-4. Creare goal: categorie, tip (A/B), vizibilitate, dată start (inclusiv backdating), target/orizont, unitate
-5. Tip A: confirmare zilnică, recuperare zile ratate în bloc, reset la eșec, ștergere
-6. Tip B: intrări cu decimale/negative, editare/ștergere intrări, sumă + durată informativă
-7. Bara de progres + pagina principală cu lista goalurilor grupate pe categorii
-8. Notificări locale de confirmare (11:00 / 15:00 / 20:00) + inactivitate Tip B (7 zile)
-9. Edge Functions: daily-reminder, inactivity-checker, notification-cleanup
+### Faza 1 — Core (MVP funcțional, single-player) ✅ COMPLETĂ
 
-### Faza 2 — Social
-1. Activare flag `social_enabled`
+1. ✅ Setup repo, Supabase, Expo (PR #1)
+2. ✅ Migrări DB complete (toate tabelele, inclusiv Faza 2 și Ops) (PR #1)
+3. ✅ Autentificare (email + parolă) (PR #1)
+4. ✅ Creare goal: categorie, tip (A/B), vizibilitate, dată start (inclusiv backdating), target/orizont, unitate (PR #2)
+5. ✅ Tip A: confirmare zilnică, recuperare zile ratate în bloc, reset la eșec, ștergere (PR #3)
+6. ✅ Tip B: intrări cu decimale/negative, editare/ștergere intrări, sumă + durată informativă (PR #4)
+7. ✅ Bara de progres + pagina principală cu lista goalurilor grupate pe categorii (PR #3)
+8. ✅ Notificări locale de confirmare (11:00 / 15:00 / 20:00) + inactivitate Tip B (7 zile) (PR #3)
+9. ✅ Edge Functions: daily-reminder, inactivity-checker, notification-cleanup (PR #5)
+
+### Faza 2 — Social (urmează)
+
+**Decizii de arhitectură adăugate:**
+- Milestone-checker = cron periodic la 15 min (consistent cu infra Faza 1)
+- Înregistrare push token în `user_devices` inclusă (precondiție pentru toate push-urile)
+- Milestone „lună întreagă" Tip A = dată calendaristică pură (`started_at + N luni`)
+
+1. Activare flag `social_enabled` + înregistrare push token în `user_devices` la login
 2. Follow unidirectional, căutare după display name (+ username afișat)
 3. Vizualizarea goalurilor publice ale userilor urmăriți
-4. Milestone checker: Tip A (multiplu 10 / lună calendaristică), Tip B (10%)
-5. Notificări de milestone către followeri
-6. Felicitări cu cei 5 emoji + afișare lângă bară cu counter
+4. Felicitări cu cei 5 emoji + afișare lângă bară cu counter (owner vede ce a primit)
+5. Milestone checker Edge Function (cron 15 min): Tip A (multiplu 10 / lună calendaristică), Tip B (10%)
+6. Notificări de milestone către followeri (`friend_milestone`), deep-link în goal-ul prietenului
 
 ---
 
