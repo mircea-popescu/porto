@@ -45,6 +45,16 @@ export async function listUnits(): Promise<Unit[]> {
   return data;
 }
 
+/** Eticheta unității unui goal Tip B: custom dacă există, altfel simbolul/numele predefinit. */
+export function unitLabel(
+  goal: { unit_id: number | null; unit_custom: string | null },
+  units: Unit[],
+): string {
+  if (goal.unit_custom) return goal.unit_custom;
+  const u = units.find((x) => x.id === goal.unit_id);
+  return u?.symbol ?? u?.name ?? '';
+}
+
 /** Goalurile proprii, cu progres calculat live (view goals_with_progress). */
 export async function listGoals(): Promise<GoalWithProgress[]> {
   const { data, error } = await supabase
@@ -239,6 +249,12 @@ export async function resetDailyGoal(goalId: string): Promise<void> {
 /** Ștergere (soft delete — dispare din listă, §9.6). */
 export async function deleteGoal(goalId: string): Promise<void> {
   const { error } = await supabase.from('goals').update({ is_deleted: true }).eq('id', goalId);
+  if (error) throw error;
+}
+
+/** Schimbă vizibilitatea goalului (public/privat), §5.2 — modificabilă oricând. */
+export async function setGoalVisibility(goalId: string, isPublic: boolean): Promise<void> {
+  const { error } = await supabase.from('goals').update({ is_public: isPublic }).eq('id', goalId);
   if (error) throw error;
 }
 

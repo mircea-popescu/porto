@@ -4,11 +4,13 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 
+import { EmojiReactions } from '@/components/emoji-reactions';
 import { ProgressBar } from '@/components/progress-bar';
 import { ValueEntries } from '@/components/value-entries';
 import { confirmAction, notify } from '@/lib/dialog';
@@ -21,8 +23,12 @@ import {
   getConfirmedDates,
   getGoal,
   GoalWithProgress,
+  listUnits,
   resetDailyGoal,
+  setGoalVisibility,
   todayISO,
+  Unit,
+  unitLabel,
 } from '@/lib/goals';
 
 export default function GoalDetail() {
@@ -31,6 +37,7 @@ export default function GoalDetail() {
 
   const [goal, setGoal] = useState<GoalWithProgress | null>(null);
   const [daily, setDaily] = useState<DailyState | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -42,8 +49,9 @@ export default function GoalDetail() {
       setDaily(computeDailyState(g.started_at, dates));
     } else {
       setDaily(null);
+      if (units.length === 0) setUnits(await listUnits());
     }
-  }, [id]);
+  }, [id, units.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,6 +78,10 @@ export default function GoalDetail() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function onToggleVisibility(value: boolean) {
+    run(() => setGoalVisibility(id, value));
   }
 
   function onConfirmToday() {
@@ -125,6 +137,7 @@ export default function GoalDetail() {
 
   const ratio = goal.progress_ratio ?? 0;
   const progress = goal.progress ?? 0;
+  const unit = goal.type === 'value' ? unitLabel(goal, units) : '';
 
   return (
     <>
@@ -137,11 +150,12 @@ export default function GoalDetail() {
           <Text style={styles.progressText}>
             {goal.type === 'daily'
               ? `${progress} / ${goal.target_days} zile  ·  ${Math.round(ratio * 100)}%`
-              : `${progress} / ${goal.target_value}  ·  ${Math.round(ratio * 100)}%`}
+              : `${progress} / ${goal.target_value} ${unit}  ·  ${Math.round(ratio * 100)}%`}
           </Text>
           {goal.type === 'value' && goal.completed_in_days != null && (
             <Text style={styles.reached}>🎉 Target atins în {goal.completed_in_days} zile</Text>
           )}
+          {goal.is_public && <EmojiReactions goalId={id} canReact={false} />}
         </View>
 
         {goal.type === 'daily' ? (
@@ -154,8 +168,18 @@ export default function GoalDetail() {
             onReset={onReset}
           />
         ) : (
-          <ValueEntries goalId={id} onChanged={load} />
+          <ValueEntries goalId={id} unit={unit} onChanged={load} />
         )}
+
+        <View style={styles.visibilityRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.visibilityLabel}>Public</Text>
+            <Text style={styles.visibilityHint}>
+              Vizibil prietenilor care te urmăresc.
+            </Text>
+          </View>
+          <Switch value={!!goal.is_public} onValueChange={onToggleVisibility} disabled={busy} />
+        </View>
 
         <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} disabled={busy}>
           <Text style={styles.deleteText}>Șterge goalul</Text>
@@ -292,6 +316,17 @@ const styles = StyleSheet.create({
   dangerText: { color: '#ef4444', fontSize: 15, fontWeight: '600' },
   disabled: { opacity: 0.5 },
   failLink: { color: '#94a3b8', fontSize: 14, textAlign: 'center', textDecorationLine: 'underline' },
+  visibilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    marginTop: 8,
+  },
+  visibilityLabel: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
+  visibilityHint: { fontSize: 13, color: '#64748b', marginTop: 2 },
   deleteBtn: { paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   deleteText: { color: '#ef4444', fontSize: 15, fontWeight: '600' },
 });

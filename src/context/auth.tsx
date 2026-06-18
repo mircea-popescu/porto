@@ -1,7 +1,17 @@
 import { Session } from '@supabase/supabase-js';
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
 
+import { refreshFlags } from '@/lib/feature-flags';
+import { registerForPushNotifications } from '@/lib/push';
 import { supabase } from '@/lib/supabase';
+
+/** Înregistrează push tokenul când există o sesiune (precondiție Faza 2, §13). */
+function onSession(session: Session | null): void {
+  if (!session) return;
+  registerForPushNotifications().catch((err) =>
+    console.warn('registerForPushNotifications:', err?.message ?? err),
+  );
+}
 
 type SignUpResult = {
   /** true dacă userul e logat imediat; false dacă trebuie să confirme emailul. */
@@ -33,11 +43,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      onSession(data.session);
     });
 
     // Sincronizare la login / logout / refresh.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
+      // La autentificare: reîncarcă flag-urile și înregistrează push tokenul.
+      if (event === 'SIGNED_IN') {
+        refreshFlags();
+        onSession(newSession);
+      } else if (event === 'SIGNED_OUT') {
+        refreshFlags();
+      }
     });
 
     return () => sub.subscription.unsubscribe();
