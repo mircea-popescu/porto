@@ -1,9 +1,7 @@
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -15,6 +13,8 @@ import {
   View,
 } from 'react-native';
 
+import { DateField } from '@/components/date-field';
+import { notify } from '@/lib/dialog';
 import {
   Category,
   CreateGoalInput,
@@ -40,7 +40,6 @@ export default function NewGoal() {
   const [type, setType] = useState<GoalType>('daily');
   const [isPublic, setIsPublic] = useState(false);
   const [startedAt, setStartedAt] = useState<Date>(startOfToday());
-  const [showPicker, setShowPicker] = useState(false);
 
   // Tip A
   const [targetDays, setTargetDays] = useState('');
@@ -61,19 +60,11 @@ export default function NewGoal() {
         if (cats.length > 0) setCategoryId(cats[0].id);
         if (us.length > 0) setUnitChoice(us[0].id);
       })
-      .catch((err) => Alert.alert('Eroare', 'Nu am putut încărca opțiunile: ' + err.message))
+      .catch((err) => notify('Eroare', 'Nu am putut încărca opțiunile: ' + err.message))
       .finally(() => setLoadingRefs(false));
   }, []);
 
   const isBackdated = useMemo(() => startedAt < startOfToday(), [startedAt]);
-
-  function onChangeDate(_event: DateTimePickerEvent, selected?: Date) {
-    setShowPicker(false);
-    if (selected) {
-      selected.setHours(0, 0, 0, 0);
-      setStartedAt(selected);
-    }
-  }
 
   function validate(): string | null {
     if (!title.trim()) return 'Dă-i un titlu goalului.';
@@ -93,7 +84,7 @@ export default function NewGoal() {
   async function onSubmit() {
     const problem = validate();
     if (problem) {
-      Alert.alert('Verifică datele', problem);
+      notify('Verifică datele', problem);
       return;
     }
     setSubmitting(true);
@@ -117,7 +108,7 @@ export default function NewGoal() {
       await createGoal(input);
       router.back();
     } catch (err) {
-      Alert.alert('Nu am putut crea goalul', (err as Error).message);
+      notify('Nu am putut crea goalul', (err as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -210,17 +201,7 @@ export default function NewGoal() {
       )}
 
       <Label>Data de start</Label>
-      <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
-        <Text style={styles.dateText}>{toISODate(startedAt)}</Text>
-      </TouchableOpacity>
-      {showPicker && (
-        <DateTimePicker
-          value={startedAt}
-          mode="date"
-          maximumDate={startOfToday()}
-          onChange={onChangeDate}
-        />
-      )}
+      <DateField value={startedAt} maximumDate={startOfToday()} onChange={setStartedAt} />
 
       {type === 'daily' && isBackdated && (
         <View style={styles.switchRow}>

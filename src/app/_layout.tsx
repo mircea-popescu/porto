@@ -35,6 +35,7 @@ function RootNavigator() {
         name="goal/new"
         options={{ presentation: 'modal', headerShown: true, title: 'Goal nou' }}
       />
+      <Stack.Screen name="goal/[id]" options={{ headerShown: true, title: 'Goal' }} />
     </Stack>
   );
 }

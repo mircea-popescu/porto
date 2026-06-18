@@ -1,7 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,7 +13,9 @@ import {
 } from 'react-native';
 
 import { ProgressBar } from '@/components/progress-bar';
+import { categoryStyle } from '@/constants/categories';
 import { Category, GoalWithProgress, listCategories, listGoals, listUnits, Unit } from '@/lib/goals';
+import { syncGoalReminders } from '@/lib/notifications';
 
 export default function Home() {
   const router = useRouter();
@@ -26,6 +30,8 @@ export default function Home() {
     setGoals(g);
     setCategories(c);
     setUnits(u);
+    // Resincronizează mementourile locale cu goalurile curente (no-op pe web).
+    syncGoalReminders(g).catch((err) => console.warn('syncGoalReminders:', err.message));
   }, []);
 
   // Reîncarcă la fiecare intrare pe tab (ex. după creare).
@@ -76,20 +82,42 @@ export default function Home() {
           Încă nu ai niciun goal. Apasă „+ Goal nou” ca să începi.
         </Text>
       ) : (
-        grouped.map(({ cat, items }) => (
-          <View key={cat.id} style={styles.section}>
-            <Text style={styles.sectionTitle}>{cat.name}</Text>
-            {items.map((g) => (
-              <GoalCard key={g.id} goal={g} units={units} />
-            ))}
-          </View>
-        ))
+        grouped.map(({ cat, items }) => {
+          const style = categoryStyle(cat.slug);
+          return (
+            <View key={cat.id} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name={style.icon} size={16} color={style.color} />
+                <Text style={[styles.sectionTitle, { color: style.color }]}>{cat.name}</Text>
+              </View>
+              {items.map((g) => (
+                <GoalCard
+                  key={g.id}
+                  goal={g}
+                  units={units}
+                  color={style.color}
+                  onPress={() => router.push({ pathname: '/goal/[id]', params: { id: g.id! } })}
+                />
+              ))}
+            </View>
+          );
+        })
       )}
     </ScrollView>
   );
 }
 
-function GoalCard({ goal, units }: { goal: GoalWithProgress; units: Unit[] }) {
+function GoalCard({
+  goal,
+  units,
+  color,
+  onPress,
+}: {
+  goal: GoalWithProgress;
+  units: Unit[];
+  color: string;
+  onPress: () => void;
+}) {
   const ratio = goal.progress_ratio ?? 0;
   const progress = goal.progress ?? 0;
 
@@ -103,16 +131,16 @@ function GoalCard({ goal, units }: { goal: GoalWithProgress; units: Unit[] }) {
   }
 
   return (
-    <View style={styles.card}>
+    <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={onPress}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle} numberOfLines={1}>
           {goal.title}
         </Text>
-        <Text style={styles.cardPct}>{Math.round(ratio * 100)}%</Text>
+        <Text style={[styles.cardPct, { color }]}>{Math.round(ratio * 100)}%</Text>
       </View>
-      <ProgressBar ratio={ratio} />
+      <ProgressBar ratio={ratio} color={color} />
       <Text style={styles.cardDetail}>{detail}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -132,7 +160,8 @@ const styles = StyleSheet.create({
   addButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   empty: { fontSize: 15, color: '#64748b', lineHeight: 22, textAlign: 'center', marginTop: 32 },
   section: { gap: 8 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -141,6 +170,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
+  cardPressed: { opacity: 0.6 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { fontSize: 16, fontWeight: '600', color: '#0f172a', flex: 1, marginRight: 8 },
   cardPct: { fontSize: 14, fontWeight: '700', color: '#2563eb' },
