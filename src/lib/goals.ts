@@ -5,9 +5,11 @@ export type Category = Database['public']['Tables']['categories']['Row'];
 export type Unit = Database['public']['Tables']['units']['Row'];
 export type GoalType = Database['public']['Enums']['goal_type'];
 export type GoalWithProgress = Database['public']['Views']['goals_with_progress']['Row'];
+export type ValueEntry = Database['public']['Tables']['value_entries']['Row'];
 
 type GoalInsert = Database['public']['Tables']['goals']['Insert'];
 type ConfirmationInsert = Database['public']['Tables']['daily_confirmations']['Insert'];
+type ValueEntryInsert = Database['public']['Tables']['value_entries']['Insert'];
 
 export type CreateGoalInput = {
   title: string;
@@ -211,6 +213,76 @@ export function computeDailyState(startedAt: string, confirmed: string[]): Daily
   }
 
   return { todayConfirmed: set.has(today), missedFrom, missedTo, missedCount };
+}
+
+// ===========================================================================
+// Tip B — intrări de valoare (PRD §3.2)
+// ===========================================================================
+
+/** Intrările unui goal Tip B, cele mai recente primele. */
+export async function listValueEntries(goalId: string): Promise<ValueEntry[]> {
+  const { data, error } = await supabase
+    .from('value_entries')
+    .select('*')
+    .eq('goal_id', goalId)
+    .order('entry_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export type ValueEntryInput = {
+  value: number; // acceptă decimale și negative (corecții)
+  note?: string | null;
+  entryDate: string; // YYYY-MM-DD
+};
+
+/** Adaugă o intrare la un goal Tip B. */
+export async function addValueEntry(goalId: string, input: ValueEntryInput): Promise<void> {
+  const userId = await currentUserId();
+  const row: ValueEntryInsert = {
+    goal_id: goalId,
+    user_id: userId,
+    value: input.value,
+    note: input.note?.trim() || null,
+    entry_date: input.entryDate,
+  };
+  const { error } = await supabase.from('value_entries').insert(row);
+  if (error) throw error;
+}
+
+/** Editează o intrare existentă. */
+export async function updateValueEntry(id: string, input: ValueEntryInput): Promise<void> {
+  const { error } = await supabase
+    .from('value_entries')
+    .update({
+      value: input.value,
+      note: input.note?.trim() || null,
+      entry_date: input.entryDate,
+    })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Șterge o intrare individuală. */
+export async function deleteValueEntry(id: string): Promise<void> {
+  const { error } = await supabase.from('value_entries').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/** Eticheta unității unui goal Tip B: custom dacă există, altfel simbolul/numele predefinit. */
+export function unitLabel(
+  goal: { unit_id: number | null; unit_custom: string | null },
+  units: Unit[],
+): string {
+  if (goal.unit_custom) return goal.unit_custom;
+  const u = units.find((x) => x.id === goal.unit_id);
+  return u?.symbol ?? u?.name ?? '';
+}
+
+/** Acceptă atât „8.3” cât și „8,3” (separatorul zecimal RO). */
+export function parseDecimal(s: string): number {
+  return Number(s.trim().replace(',', '.'));
 }
 
 async function currentUserId(): Promise<string> {

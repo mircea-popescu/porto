@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { ProgressBar } from '@/components/progress-bar';
+import { ValueEntries } from '@/components/value-entries';
 import { confirmAction, notify } from '@/lib/dialog';
 import {
   computeDailyState,
@@ -20,8 +21,11 @@ import {
   getConfirmedDates,
   getGoal,
   GoalWithProgress,
+  listUnits,
   resetDailyGoal,
   todayISO,
+  Unit,
+  unitLabel,
 } from '@/lib/goals';
 
 export default function GoalDetail() {
@@ -30,6 +34,7 @@ export default function GoalDetail() {
 
   const [goal, setGoal] = useState<GoalWithProgress | null>(null);
   const [daily, setDaily] = useState<DailyState | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -41,8 +46,9 @@ export default function GoalDetail() {
       setDaily(computeDailyState(g.started_at, dates));
     } else {
       setDaily(null);
+      if (units.length === 0) setUnits(await listUnits());
     }
-  }, [id]);
+  }, [id, units.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -124,6 +130,7 @@ export default function GoalDetail() {
 
   const ratio = goal.progress_ratio ?? 0;
   const progress = goal.progress ?? 0;
+  const unit = goal.type === 'value' ? unitLabel(goal, units) : '';
 
   return (
     <>
@@ -136,8 +143,14 @@ export default function GoalDetail() {
           <Text style={styles.progressText}>
             {goal.type === 'daily'
               ? `${progress} / ${goal.target_days} zile  ·  ${Math.round(ratio * 100)}%`
-              : `${progress} / ${goal.target_value}  ·  ${Math.round(ratio * 100)}%`}
+              : `${progress} / ${goal.target_value} ${unit}  ·  ${Math.round(ratio * 100)}%`}
           </Text>
+          {goal.type === 'value' && goal.completed_in_days != null && (
+            <Text style={styles.completedText}>
+              🎯 Target atins în {goal.completed_in_days}{' '}
+              {goal.completed_in_days === 1 ? 'zi' : 'zile'} de la start
+            </Text>
+          )}
         </View>
 
         {goal.type === 'daily' ? (
@@ -150,12 +163,7 @@ export default function GoalDetail() {
             onReset={onReset}
           />
         ) : (
-          <View style={styles.card}>
-            <Text style={styles.muted}>
-              Adăugarea și editarea intrărilor pentru goalurile de tip valoare vine la pasul
-              următor (pasul 6).
-            </Text>
-          </View>
+          <ValueEntries goalId={id} unit={unit} onChanged={load} />
         )}
 
         <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} disabled={busy}>
@@ -262,6 +270,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   progressBlock: { gap: 8 },
   progressText: { fontSize: 14, color: '#475569', fontWeight: '500' },
+  completedText: { fontSize: 14, color: '#16a34a', fontWeight: '600' },
   card: {
     backgroundColor: '#f8fafc',
     borderRadius: 12,
