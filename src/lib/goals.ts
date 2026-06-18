@@ -119,3 +119,128 @@ export async function createGoal(input: CreateGoalInput): Promise<string> {
 
   return goal.id;
 }
+
+// ===========================================================================
+// Tip A — confirmări zilnice (PRD §3.1)
+// ===========================================================================
+
+export type DailyState = {
+  todayConfirmed: boolean;
+  /** Fereastra de zile neconfirmate (ultima confirmare/start → ieri), dacă există. */
+  missedFrom: string | null;
+  missedTo: string | null;
+  missedCount: number;
+};
+
+/** Un singur goal cu progres (view). */
+export async function getGoal(id: string): Promise<GoalWithProgress> {
+  const { data, error } = await supabase
+    .from('goals_with_progress')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** Datele confirmate (YYYY-MM-DD), sortate crescător. */
+export async function getConfirmedDates(goalId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('daily_confirmations')
+    .select('confirmed_date')
+    .eq('goal_id', goalId)
+    .order('confirmed_date');
+  if (error) throw error;
+  return data.map((r) => r.confirmed_date);
+}
+
+/** Marchează zile ca ținute (idempotent — ignoră zilele deja confirmate). */
+export async function confirmDays(goalId: string, dates: string[]): Promise<void> {
+  if (dates.length === 0) return;
+  const userId = await currentUserId();
+  const rows: ConfirmationInsert[] = dates.map((d) => ({
+    goal_id: goalId,
+    user_id: userId,
+    confirmed_date: d,
+  }));
+  const { error } = await supabase
+    .from('daily_confirmations')
+    .upsert(rows, { onConflict: 'goal_id,confirmed_date', ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+/** Reset la eșec: șterge istoricul și reîncepe de azi (§3.1, decizia 17). */
+export async function resetDailyGoal(goalId: string): Promise<void> {
+  const { error: delErr } = await supabase
+    .from('daily_confirmations')
+    .delete()
+    .eq('goal_id', goalId);
+  if (delErr) throw delErr;
+  const { error: updErr } = await supabase
+    .from('goals')
+    .update({ started_at: todayISO() })
+    .eq('id', goalId);
+  if (updErr) throw updErr;
+}
+
+/** Ștergere (soft delete — dispare din listă, §9.6). */
+export async function deleteGoal(goalId: string): Promise<void> {
+  const { error } = await supabase.from('goals').update({ is_deleted: true }).eq('id', goalId);
+  if (error) throw error;
+}
+
+/** Calculează starea de confirmare a unui goal Tip A din datele confirmate. */
+export function computeDailyState(startedAt: string, confirmed: string[]): DailyState {
+  const set = new Set(confirmed);
+  const today = todayISO();
+  const yesterday = addDaysISO(today, -1);
+  const last = confirmed.length > 0 ? confirmed[confirmed.length - 1] : null;
+  const from = last ? addDaysISO(last, 1) : startedAt;
+
+  let missedFrom: string | null = null;
+  let missedTo: string | null = null;
+  let missedCount = 0;
+
+  if (from <= yesterday) {
+    const window = dateRange(from, yesterday).filter((d) => !set.has(d));
+    if (window.length > 0) {
+      missedFrom = window[0];
+      missedTo = window[window.length - 1];
+      missedCount = window.length;
+    }
+  }
+
+  return { todayConfirmed: set.has(today), missedFrom, missedTo, missedCount };
+}
+
+async function currentUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  const id = data.user?.id;
+  if (!id) throw new Error('Nu ești autentificat.');
+  return id;
+}
+
+export function todayISO(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return toISODate(d);
+}
+
+export function addDaysISO(iso: string, days: number): string {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return toISODate(d);
+}
+
+/** Toate datele între fromISO și toISO inclusiv (YYYY-MM-DD). */
+export function dateRange(fromISO: string, toISO: string): string[] {
+  const out: string[] = [];
+  const cur = new Date(fromISO + 'T00:00:00');
+  const end = new Date(toISO + 'T00:00:00');
+  while (cur <= end) {
+    out.push(toISODate(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
