@@ -22,7 +22,15 @@ function formatNum(n: number): string {
   return Number.isInteger(n) ? String(n) : String(n);
 }
 
-export function ValueEntries({ goalId, onChanged }: { goalId: string; onChanged: () => void }) {
+export function ValueEntries({
+  goalId,
+  unit = '',
+  onChanged,
+}: {
+  goalId: string;
+  unit?: string;
+  onChanged: () => void;
+}) {
   const [entries, setEntries] = useState<ValueEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -86,7 +94,7 @@ export function ValueEntries({ goalId, onChanged }: { goalId: string; onChanged:
   async function remove(e: ValueEntry) {
     const ok = await confirmAction(
       'Șterge intrarea',
-      `Ștergi intrarea de ${formatNum(e.value)} din ${e.entry_date}?`,
+      `Ștergi intrarea de ${formatNum(e.value)}${unit ? ` ${unit}` : ''} din ${e.entry_date}?`,
       'Șterge',
       true,
     );
@@ -114,7 +122,7 @@ export function ValueEntries({ goalId, onChanged }: { goalId: string; onChanged:
           <Text style={styles.formTitle}>{editingId ? 'Editează intrarea' : 'Intrare nouă'}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Valoare (ex. 8.3 sau -2)"
+            placeholder={unit ? `Valoare în ${unit} (ex. 8.3 sau -2)` : 'Valoare (ex. 8.3 sau -2)'}
             placeholderTextColor={palette.ink4}
             value={value}
             onChangeText={setValue}
@@ -158,6 +166,7 @@ export function ValueEntries({ goalId, onChanged }: { goalId: string; onChanged:
               <Text style={styles.entryValue}>
                 {e.value > 0 ? '+' : ''}
                 {formatNum(e.value)}
+                {unit ? ` ${unit}` : ''}
               </Text>
               <Text style={styles.entryMeta}>
                 {e.entry_date}

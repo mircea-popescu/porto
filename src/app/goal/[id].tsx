@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { EmojiReactions } from '@/components/emoji-reactions';
 import { ProgressBar } from '@/components/progress-bar';
 import { Button, Card, Eyebrow } from '@/components/ui';
 import { ValueEntries } from '@/components/value-entries';
@@ -20,8 +21,12 @@ import {
   getGoal,
   GoalWithProgress,
   listCategories,
+  listUnits,
   resetDailyGoal,
+  setGoalVisibility,
   todayISO,
+  Unit,
+  unitLabel,
 } from '@/lib/goals';
 
 export default function GoalDetail() {
@@ -33,6 +38,7 @@ export default function GoalDetail() {
   const [daily, setDaily] = useState<DailyState | null>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [categorySlug, setCategorySlug] = useState<string>('');
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -47,8 +53,9 @@ export default function GoalDetail() {
       setDaily(computeDailyState(g.started_at, dates));
     } else {
       setDaily(null);
+      if (units.length === 0) setUnits(await listUnits());
     }
-  }, [id]);
+  }, [id, units.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -75,6 +82,10 @@ export default function GoalDetail() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function onToggleVisibility(value: boolean) {
+    run(() => setGoalVisibility(id, value));
   }
 
   function onConfirmToday() {
@@ -131,11 +142,12 @@ export default function GoalDetail() {
   const ratio = goal.progress_ratio ?? 0;
   const progress = goal.progress ?? 0;
   const color = categoryStyle(categorySlug).color;
+  const unit = goal.type === 'value' ? unitLabel(goal, units) : '';
 
   const targetLabel =
     goal.type === 'daily'
       ? `${progress} / ${goal.target_days} zile`
-      : `${progress} / ${goal.target_value}`;
+      : `${progress} / ${goal.target_value} ${unit}`.trim();
 
   return (
     <View style={styles.screen}>
@@ -166,6 +178,7 @@ export default function GoalDetail() {
           {goal.type === 'value' && goal.completed_in_days != null && (
             <Text style={styles.reached}>🎯 Target atins în {goal.completed_in_days} zile</Text>
           )}
+          {goal.is_public && <EmojiReactions goalId={id} canReact={false} />}
         </View>
 
         {goal.type === 'daily' ? (
@@ -178,10 +191,28 @@ export default function GoalDetail() {
             onReset={onReset}
           />
         ) : (
-          <ValueEntries goalId={id} onChanged={load} />
+          <ValueEntries goalId={id} unit={unit} onChanged={load} />
         )}
 
-        <Button label="Șterge goalul" variant="dangerText" onPress={onDelete} disabled={busy} style={{ marginTop: 8 }} />
+        <View style={styles.visibilityRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.visibilityLabel}>Public</Text>
+            <Text style={styles.visibilityHint}>Vizibil prietenilor care te urmăresc.</Text>
+          </View>
+          <Switch
+            value={!!goal.is_public}
+            onValueChange={onToggleVisibility}
+            disabled={busy}
+            trackColor={{ true: palette.accent, false: palette.line }}
+          />
+        </View>
+
+        <Button
+          label="Șterge goalul"
+          variant="dangerText"
+          onPress={onDelete}
+          disabled={busy}
+        />
       </ScrollView>
     </View>
   );
@@ -262,4 +293,15 @@ const styles = StyleSheet.create({
   muted: { fontFamily: font.sans, fontSize: 14, color: palette.ink3, lineHeight: 20 },
   confirmedText: { fontFamily: font.sansSemibold, fontSize: 16, color: palette.ok },
   row: { flexDirection: 'row', gap: 12 },
+  visibilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: palette.line,
+    marginTop: 4,
+  },
+  visibilityLabel: { fontFamily: font.sansSemibold, fontSize: 15, color: palette.ink },
+  visibilityHint: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink3, marginTop: 2 },
 });
