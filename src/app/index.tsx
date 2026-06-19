@@ -1,5 +1,7 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { palette } from '@/constants/theme';
+
 /**
  * Ecran tranzitoriu: afișat cât timp se rezolvă sesiunea în RootNavigator,
  * care apoi redirecționează spre (tabs) sau (auth).
@@ -7,7 +9,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 export default function Index() {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" />
+      <ActivityIndicator size="large" color={palette.accent} />
     </View>
   );
 }
@@ -17,5 +19,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: palette.bg,
   },
 });

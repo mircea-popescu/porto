@@ -1,16 +1,14 @@
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProgressBar } from '@/components/progress-bar';
+import { Button, Card, Eyebrow } from '@/components/ui';
 import { ValueEntries } from '@/components/value-entries';
+import { categoryStyle } from '@/constants/categories';
+import { font, palette } from '@/constants/theme';
 import { confirmAction, notify } from '@/lib/dialog';
 import {
   computeDailyState,
@@ -21,6 +19,7 @@ import {
   getConfirmedDates,
   getGoal,
   GoalWithProgress,
+  listCategories,
   resetDailyGoal,
   todayISO,
 } from '@/lib/goals';
@@ -28,15 +27,21 @@ import {
 export default function GoalDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [goal, setGoal] = useState<GoalWithProgress | null>(null);
   const [daily, setDaily] = useState<DailyState | null>(null);
+  const [categoryName, setCategoryName] = useState<string | null>(null);
+  const [categorySlug, setCategorySlug] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const g = await getGoal(id);
+    const [g, cats] = await Promise.all([getGoal(id), listCategories()]);
     setGoal(g);
+    const cat = cats.find((c) => c.id === g.category_id);
+    setCategoryName(cat?.name ?? null);
+    setCategorySlug(cat?.slug ?? '');
     if (g.type === 'daily' && g.started_at) {
       const dates = await getConfirmedDates(id);
       setDaily(computeDailyState(g.started_at, dates));
@@ -117,30 +122,49 @@ export default function GoalDetail() {
 
   if (loading || !goal) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator size="large" color={palette.accent} />
       </View>
     );
   }
 
   const ratio = goal.progress_ratio ?? 0;
   const progress = goal.progress ?? 0;
+  const color = categoryStyle(categorySlug).color;
+
+  const targetLabel =
+    goal.type === 'daily'
+      ? `${progress} / ${goal.target_days} zile`
+      : `${progress} / ${goal.target_value}`;
 
   return (
-    <>
-      <Stack.Screen options={{ title: goal.title ?? 'Goal' }} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{goal.title}</Text>
+    <View style={styles.screen}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={24} color={palette.ink} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 32 }]}
+      >
+        <View style={styles.header}>
+          {categoryName ? <Eyebrow style={{ color }}>{categoryName}</Eyebrow> : null}
+          <Text style={styles.title}>{goal.title}</Text>
+        </View>
 
         <View style={styles.progressBlock}>
-          <ProgressBar ratio={ratio} />
-          <Text style={styles.progressText}>
-            {goal.type === 'daily'
-              ? `${progress} / ${goal.target_days} zile  ·  ${Math.round(ratio * 100)}%`
-              : `${progress} / ${goal.target_value}  ·  ${Math.round(ratio * 100)}%`}
-          </Text>
+          <View style={styles.progressRow}>
+            <Text style={[styles.bigPct, { color }]}>{Math.round(ratio * 100)}%</Text>
+            <Text style={styles.target}>{targetLabel}</Text>
+          </View>
+          <ProgressBar ratio={ratio} color={color} height={11} />
           {goal.type === 'value' && goal.completed_in_days != null && (
-            <Text style={styles.reached}>🎉 Target atins în {goal.completed_in_days} zile</Text>
+            <Text style={styles.reached}>🎯 Target atins în {goal.completed_in_days} zile</Text>
           )}
         </View>
 
@@ -157,11 +181,9 @@ export default function GoalDetail() {
           <ValueEntries goalId={id} onChanged={load} />
         )}
 
-        <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} disabled={busy}>
-          <Text style={styles.deleteText}>Șterge goalul</Text>
-        </TouchableOpacity>
+        <Button label="Șterge goalul" variant="dangerText" onPress={onDelete} disabled={busy} style={{ marginTop: 8 }} />
       </ScrollView>
-    </>
+    </View>
   );
 }
 
@@ -185,7 +207,7 @@ function DailyActions({
   return (
     <View style={{ gap: 16 }}>
       {daily.missedCount > 0 ? (
-        <View style={styles.card}>
+        <Card style={{ gap: 12 }}>
           <Text style={styles.cardTitle}>Perioadă neconfirmată</Text>
           <Text style={styles.muted}>
             Ai {daily.missedCount}{' '}
@@ -194,104 +216,50 @@ function DailyActions({
             {daily.missedTo}). Te-ai ținut toată perioada?
           </Text>
           <View style={styles.row}>
-            <PrimaryButton label="Da, m-am ținut" onPress={onConfirmMissed} disabled={busy} />
-            <DangerButton label="Nu, am ratat" onPress={onFailedPeriod} disabled={busy} />
+            <Button
+              label="Da, m-am ținut"
+              variant="success"
+              onPress={onConfirmMissed}
+              disabled={busy}
+              style={{ flex: 1 }}
+            />
+            <Button
+              label="Nu, am ratat"
+              variant="dangerOutline"
+              onPress={onFailedPeriod}
+              disabled={busy}
+              style={{ flex: 1 }}
+            />
           </View>
-        </View>
+        </Card>
       ) : daily.todayConfirmed ? (
-        <View style={styles.card}>
+        <Card style={{ backgroundColor: palette.okSoft, borderColor: palette.okSoft }}>
           <Text style={styles.confirmedText}>✓ Ai confirmat ziua de azi</Text>
-        </View>
+        </Card>
       ) : (
-        <PrimaryButton label="Confirmă ziua de azi" onPress={onConfirmToday} disabled={busy} big />
+        <Button label="Confirmă ziua de azi" variant="success" onPress={onConfirmToday} disabled={busy} />
       )}
 
-      <TouchableOpacity onPress={onReset} disabled={busy}>
-        <Text style={styles.failLink}>Am eșuat — resetează trackerul</Text>
-      </TouchableOpacity>
+      <Button label="Am eșuat — resetează trackerul" variant="linkDiscreet" onPress={onReset} disabled={busy} />
     </View>
   );
 }
 
-function PrimaryButton({
-  label,
-  onPress,
-  disabled,
-  big,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  big?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.primaryBtn, big && styles.bigBtn, disabled && styles.disabled, { flex: 1 }]}
-      onPress={onPress}
-      disabled={disabled}
-    >
-      <Text style={styles.primaryText}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function DangerButton({
-  label,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.dangerBtn, disabled && styles.disabled, { flex: 1 }]}
-      onPress={onPress}
-      disabled={disabled}
-    >
-      <Text style={styles.dangerText}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { padding: 20, gap: 20 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
-  progressBlock: { gap: 8 },
-  progressText: { fontSize: 14, color: '#475569', fontWeight: '500' },
-  reached: { fontSize: 14, color: '#16a34a', fontWeight: '600' },
-  card: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  muted: { fontSize: 14, color: '#64748b', lineHeight: 20 },
-  confirmedText: { fontSize: 16, fontWeight: '600', color: '#16a34a' },
+  screen: { flex: 1, backgroundColor: palette.bg },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  topBar: { paddingHorizontal: 12, paddingBottom: 4 },
+  backBtn: { width: 36, height: 36, alignItems: 'flex-start', justifyContent: 'center' },
+  container: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
+  header: { gap: 6 },
+  title: { fontFamily: font.serif, fontSize: 26, color: palette.ink },
+  progressBlock: { gap: 12 },
+  progressRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  bigPct: { fontFamily: font.serif, fontSize: 34 },
+  target: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink3 },
+  reached: { fontFamily: font.sansSemibold, fontSize: 14, color: palette.ok },
+  cardTitle: { fontFamily: font.sansSemibold, fontSize: 16, color: palette.ink },
+  muted: { fontFamily: font.sans, fontSize: 14, color: palette.ink3, lineHeight: 20 },
+  confirmedText: { fontFamily: font.sansSemibold, fontSize: 16, color: palette.ok },
   row: { flexDirection: 'row', gap: 12 },
-  primaryBtn: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  bigBtn: { paddingVertical: 16 },
-  primaryText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  dangerBtn: {
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  dangerText: { color: '#ef4444', fontSize: 15, fontWeight: '600' },
-  disabled: { opacity: 0.5 },
-  failLink: { color: '#94a3b8', fontSize: 14, textAlign: 'center', textDecorationLine: 'underline' },
-  deleteBtn: { paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  deleteText: { color: '#ef4444', fontSize: 15, fontWeight: '600' },
 });

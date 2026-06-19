@@ -1,18 +1,18 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/ui';
+import { font, palette, radius, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 
 export default function SignIn() {
@@ -43,13 +43,13 @@ export default function SignIn() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.container}>
-          <Text style={styles.title}>Porto</Text>
+          <Text style={styles.brand}>Porto</Text>
           <Text style={styles.subtitle}>Bine ai revenit</Text>
 
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -60,7 +60,7 @@ export default function SignIn() {
           <TextInput
             style={styles.input}
             placeholder="Parolă"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -70,17 +70,13 @@ export default function SignIn() {
             returnKeyType="go"
           />
 
-          <TouchableOpacity
-            style={[styles.button, !canSubmit && styles.buttonDisabled]}
+          <Button
+            label="Intră în cont"
             onPress={onSubmit}
             disabled={!canSubmit}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Intră în cont</Text>
-            )}
-          </TouchableOpacity>
+            loading={submitting}
+            style={{ marginTop: 8 }}
+          />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Nu ai cont? </Text>
@@ -95,7 +91,7 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, backgroundColor: palette.bg },
   flex: { flex: 1 },
   container: {
     flex: 1,
@@ -103,38 +99,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  title: {
-    fontSize: 40,
-    fontWeight: '700',
+  brand: {
+    fontFamily: font.serif,
+    fontSize: 44,
     textAlign: 'center',
-    color: '#2563eb',
+    color: palette.ink,
   },
   subtitle: {
-    fontSize: 16,
+    fontFamily: font.sansMedium,
+    fontSize: 15,
     textAlign: 'center',
-    color: '#64748b',
+    color: palette.ink3,
     marginBottom: 16,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
+    borderColor: palette.line,
+    borderRadius: radius.input,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
     paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
+    fontFamily: font.sans,
+    fontSize: 15,
+    color: palette.ink,
+    backgroundColor: palette.surface,
+    ...shadow.sm,
   },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
-  footerText: { color: '#64748b' },
-  link: { color: '#2563eb', fontWeight: '600' },
+  footerText: { fontFamily: font.sans, color: palette.ink3 },
+  link: { fontFamily: font.sansSemibold, color: palette.accent },
 });
