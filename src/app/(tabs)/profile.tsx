@@ -1,7 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Avatar, Button, Card, Eyebrow, ScreenTitle } from '@/components/ui';
+import { font, palette } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
@@ -11,6 +14,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 export default function ProfileScreen() {
   const router = useRouter();
   const { session, signOut } = useAuth();
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,28 +51,43 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator size="large" color={palette.accent} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[
+        styles.container,
+        { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 96 },
+      ]}
+    >
+      <View style={styles.header}>
+        <Eyebrow>Contul tău</Eyebrow>
+        <ScreenTitle>Profil</ScreenTitle>
+      </View>
+
+      <View style={styles.avatarBlock}>
+        <Avatar name={profile?.display_name ?? '?'} size={84} />
+      </View>
+
+      <Card style={styles.card}>
         <Field label="Nume afișat" value={profile?.display_name ?? '—'} />
         <Field label="Username" value={profile ? '@' + profile.username : '—'} />
         <Field label="Email" value={session?.user.email ?? '—'} />
-      </View>
+      </Card>
 
-      <TouchableOpacity style={styles.widgetBtn} onPress={() => router.push('/widget-settings')}>
-        <Text style={styles.widgetBtnText}>Configurează widget</Text>
-      </TouchableOpacity>
+      <Button
+        label="Configurează widget"
+        variant="ghost"
+        onPress={() => router.push('/widget-settings')}
+      />
 
-      <TouchableOpacity style={styles.signOut} onPress={onSignOut}>
-        <Text style={styles.signOutText}>Deconectează-te</Text>
-      </TouchableOpacity>
-    </View>
+      <Button label="Deconectează-te" variant="dangerOutline" onPress={onSignOut} />
+    </ScrollView>
   );
 }
 
@@ -82,34 +101,19 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 24 },
+  screen: { flex: 1, backgroundColor: palette.bg },
+  container: { paddingHorizontal: 24, gap: 24 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  card: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
-    gap: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  header: { gap: 4 },
+  avatarBlock: { alignItems: 'center', marginTop: 8 },
+  card: { gap: 16 },
+  field: { gap: 3 },
+  fieldLabel: {
+    fontFamily: font.sansSemibold,
+    fontSize: 12,
+    letterSpacing: 0.48,
+    textTransform: 'uppercase',
+    color: palette.ink3,
   },
-  field: { gap: 2 },
-  fieldLabel: { fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 },
-  fieldValue: { fontSize: 16, color: '#0f172a', fontWeight: '500' },
-  widgetBtn: {
-    backgroundColor: '#f1f5f9',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  widgetBtnText: { color: '#0f172a', fontSize: 16, fontWeight: '500' },
-  signOut: {
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  signOutText: { color: '#ef4444', fontSize: 16, fontWeight: '600' },
+  fieldValue: { fontFamily: font.sansMedium, fontSize: 16, color: palette.ink },
 });

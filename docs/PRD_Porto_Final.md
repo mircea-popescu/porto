@@ -1,9 +1,9 @@
 # PRD — Porto (Habit & Goal Progression Tracker)
 
-**Versiune:** 2.0 (finală)
+**Versiune:** 2.1
 **Autor:** Mircea
-**Data:** 17 iunie 2026
-**Status:** Gata pentru implementare în Claude Code
+**Data:** 17 iunie 2026 (actualizat 18 iunie 2026)
+**Status:** Faza 1 (MVP single-player) completă pe `main`. Faza 2 (social) neîncepută. Vezi §13 pentru stare detaliată, scopuri și ce mai rămâne.
 
 ---
 
@@ -287,33 +287,73 @@ porto/
 
 ---
 
-## 13. Faze de implementare
+## 13. Stare implementare, scopuri și ce mai rămâne
 
-### Faza 1 — Core (MVP funcțional, single-player) ✅ COMPLETĂ
+Această secțiune e sursa de adevăr pentru *ce face aplicația*, *de ce*, *ce e gata* și *ce mai trebuie ca să fie funcțională*. Restul PRD-ului (§1–§12) e specificația; aici e starea.
 
-1. ✅ Setup repo, Supabase, Expo (PR #1)
-2. ✅ Migrări DB complete (toate tabelele, inclusiv Faza 2 și Ops) (PR #1)
-3. ✅ Autentificare (email + parolă) (PR #1)
-4. ✅ Creare goal: categorie, tip (A/B), vizibilitate, dată start (inclusiv backdating), target/orizont, unitate (PR #2)
-5. ✅ Tip A: confirmare zilnică, recuperare zile ratate în bloc, reset la eșec, ștergere (PR #3)
-6. ✅ Tip B: intrări cu decimale/negative, editare/ștergere intrări, sumă + durată informativă (PR #4)
-7. ✅ Bara de progres + pagina principală cu lista goalurilor grupate pe categorii (PR #3)
-8. ✅ Notificări locale de confirmare (11:00 / 15:00 / 20:00) + inactivitate Tip B (7 zile) (PR #3)
-9. ✅ Edge Functions: daily-reminder, inactivity-checker, notification-cleanup (PR #5)
+### 13.0 Scopul aplicației (de ce există)
 
-### Faza 2 — Social (urmează)
+Porto ajută userul să-și **formeze și mențină obiceiuri** prin trei mecanisme:
+1. **Vizibilitate** — fiecare obicei e un goal cu bară de progres, ca userul să vadă dintr-o privire cât a avansat spre țintă.
+2. **Ritual** — confirmarea zilnică (Tip A) sau adăugarea de valori (Tip B) transformă obiceiul într-o acțiune repetată conștient, care întărește comportamentul.
+3. **Accountability social** (Faza 2) — prietenii văd goalurile publice, primesc notificări la milestone-uri și felicită cu emoji; recunoașterea de la alții e motivația care ține userul pe drum.
 
-**Decizii de arhitectură adăugate:**
-- Milestone-checker = cron periodic la 15 min (consistent cu infra Faza 1)
-- Înregistrare push token în `user_devices` inclusă (precondiție pentru toate push-urile)
-- Milestone „lună întreagă" Tip A = dată calendaristică pură (`started_at + N luni`)
+„Funcțional" are două praguri:
+- **MVP single-player** (Faza 1): un user poate trăi întreg ciclul singur — cont → goal → progres → reminder. **Atins.**
+- **Produs complet** (Faza 2): se adaugă stratul social. **Neînceput.**
 
-1. Activare flag `social_enabled` + înregistrare push token în `user_devices` la login
-2. Follow unidirectional, căutare după display name (+ username afișat)
-3. Vizualizarea goalurilor publice ale userilor urmăriți
-4. Felicitări cu cei 5 emoji + afișare lângă bară cu counter (owner vede ce a primit)
-5. Milestone checker Edge Function (cron 15 min): Tip A (multiplu 10 / lună calendaristică), Tip B (10%)
-6. Notificări de milestone către followeri (`friend_milestone`), deep-link în goal-ul prietenului
+### 13.1 Faza 1 — Core (MVP single-player) ✅ COMPLETĂ pe `main`
+
+Fiecare task, cu *scopul* lui și ce livrează concret:
+
+| # | Task | Scop (de ce) | Livrat | PR |
+|---|---|---|---|---|
+| 1 | Setup repo, Supabase, Expo | Fundația: un cod RN pentru iOS+Android, backend Supabase | Proiect Expo Router (`src/`), client Supabase | #1 |
+| 2 | Migrări DB complete | Toată schema (inclusiv tabele Faza 2 + Ops) dintr-o dată, ca să nu mai atingi DB-ul | 8 migrări: enums, core, social, ops, view, RLS, seed, triggere auth | #1 |
+| 3 | Autentificare email+parolă | Userul are identitate proprie, datele lui sunt izolate (RLS) | Sign-in / sign-up, sesiune, profil creat la signup | #1 |
+| 4 | Creare goal | Userul își definește obiceiul: categorie, tip A/B, vizibilitate, dată start (+ backdating), target, unitate | Ecran `goal/new`, validări pe tip | #2 |
+| 5 | Tip A — confirmare zilnică | Ritualul zilnic: confirmi azi, recuperezi zile ratate în bloc, resetezi la eșec, ștergi | Ecran `goal/[id]` cu acțiuni Tip A | #3 |
+| 6 | Tip B — intrări valoare | Tracking cantitativ: adaugi/editezi/ștergi intrări (decimale + corecții negative), sumă live + durată informativă la atingerea targetului | `value-entries.tsx` + funcții în `goals.ts` | #4 |
+| 7 | Bară progres + home | Vizibilitatea: lista goalurilor grupate pe categorii, fiecare cu bara lui | Tab home, `ProgressBar`, grupare pe categorii | #3 |
+| 8 | Notificări **locale** | Reminder pe device fără server: confirmare Tip A (11/15/20) + inactivitate Tip B | `lib/notifications.ts`, programare la deschiderea app-ului | #3 |
+| 9 | Edge Functions (server-side) | Worker-e care trimit push **remote** și fac curățenie, independent de app | `daily-reminder`, `inactivity-checker`, `notification-cleanup` + cron jobs | #5 |
+
+**Concluzie Faza 1:** pe un device real, un user poate parcurge tot fluxul single-player, iar notificările **locale** funcționează. Vezi totuși gap-ul de la §13.2.
+
+### 13.2 Gap care blochează push-ul remote (precondiție, nu „nice to have")
+
+Edge Functions-urile din pasul 9 trimit push către token-urile din tabelul `user_devices`. **Nimic din aplicație nu scrie încă în `user_devices`** (`expo_push_token` apare doar în migrări, tipuri și Edge Functions — în niciun fișier din `src/`). Consecință:
+
+- Notificările **locale** (programate pe device) — **merg**.
+- Notificările **remote** (daily-reminder, inactivity, milestone social) — **nu ajung la nimeni**, fiindcă nu există token-uri înregistrate.
+
+**Ce trebuie:** la login (pe device real, nu web), cere permisiunea de notificări, ia Expo push token-ul și fă upsert în `user_devices` (cu `platform`, `is_active`, `last_seen_at`). Toate apelurile prin `lib/notifications.ts` (§12). Abia după asta pipeline-ul push remote e funcțional cap-coadă. *(Apare și ca primul task din Faza 2, dar e enumerat aici fiindcă afectează deja Faza 1.)*
+
+### 13.3 Faza 2 — Social (neîncepută)
+
+Tabelele (`follows`, `emoji_reactions`) și ENUM-urile există deja în DB din migrarea #1 — rămâne **doar codul**. Înainte de orice task, verifică flag-ul `social_enabled` (§12).
+
+| # | Task | Scop (de ce) |
+|---|---|---|
+| 1 | Activare `social_enabled` + **înregistrare push token** în `user_devices` la login | Pornește stratul social; fără token, niciun push remote nu pleacă (vezi §13.2) |
+| 2 | Follow unidirectional + căutare după display name (cu username afișat) | Userul își găsește și urmărește prietenii (model Instagram) |
+| 3 | Vizualizarea goalurilor publice ale userilor urmăriți | Vezi progresul prietenilor — baza accountability-ului |
+| 4 | Felicitări cu cei 5 emoji + afișare lângă bară cu counter | Recunoașterea socială vizibilă pentru owner (👍×3 ❤️×1) |
+| 5 | Milestone checker (Edge Function, cron 15 min): Tip A (multiplu 10 / lună calendaristică), Tip B (10%) | Detectează automat reușitele, cu dedup prin `milestones_sent` |
+| 6 | Notificări de milestone către followeri (`friend_milestone`), deep-link în goal-ul prietenului | Închide bucla: prietenul atinge un prag → tu afli → îl feliciți |
+
+**Decizii de arhitectură Faza 2 (confirmate):**
+- Milestone-checker = cron periodic la 15 min (consistent cu infra Faza 1).
+- Înregistrarea push token în `user_devices` e precondiție pentru toate push-urile.
+- Milestone „lună întreagă" Tip A = dată calendaristică pură (`started_at + N luni`).
+
+### 13.4 Ce mai trebuie ca aplicația să fie complet funcțională (rezumat)
+
+1. **Înregistrarea push token** (§13.2) — singurul lucru care lipsește ca push-urile remote din Faza 1 să funcționeze efectiv.
+2. **Faza 2 integrală** (§13.3, 6 task-uri) — pentru produsul social complet.
+3. **Deploy + cron** pe proiectul cloud — `supabase functions deploy` + programarea cron (vezi `supabase/functions/README.md` și migrarea `20240618000001_cron_jobs.sql`).
+
+> Notă de structură: codul real e în `src/app/` (Expo Router), nu `app/` cum arată schița din §10 — folderele `lib/`/`components/`/`types/` nu pot sta în interiorul folderului de rute. Aliasul `@/` → `src/`.
 
 ---
 

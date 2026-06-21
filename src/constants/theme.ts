@@ -63,3 +63,83 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+/* -------------------------------------------------------------------------- */
+/* Design system "Calm & Premium" (light-first, v1).                          */
+/* Toate ecranele consumă acești tokeni — fără hexuri hardcodate per screen.  */
+/* -------------------------------------------------------------------------- */
+
+export const palette = {
+  // Suprafețe
+  bg: '#FBFAF8',
+  surface: '#FFFFFF',
+  surface2: '#F4F2EE',
+  line: '#ECE9E3',
+  // Ink (text)
+  ink: '#1A1A18',
+  ink2: '#56544E',
+  ink3: '#8B887F',
+  ink4: '#B5B2A8',
+  // Accent (indigo profund)
+  accent: '#3D4EAD',
+  accentSoft: '#EAECF7',
+  accentInk: '#2C3A8A',
+  // Semantice
+  ok: '#2F7A56',
+  okSoft: '#E5F0EA',
+  danger: '#B4453A',
+} as const;
+
+export const radius = {
+  card: 18,
+  btn: 14,
+  input: 12,
+  pill: 999,
+} as const;
+
+/** Umbre subtile — înlocuiesc border-urile de separare. iOS shadow* + Android elevation. */
+export const shadow = {
+  sm: {
+    shadowColor: '#1A1A18',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: '#1A1A18',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 3,
+  },
+  lg: {
+    shadowColor: '#1A1A18',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.1,
+    shadowRadius: 40,
+    elevation: 8,
+  },
+  /** Tentă de accent, pentru butonul primary. */
+  accentBtn: {
+    shadowColor: '#3D4EAD',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+} as const;
+
+/** Familiile încărcate prin @expo-google-fonts/* (vezi _layout.tsx). */
+export const font = {
+  serif: 'Fraunces_600SemiBold',
+  sans: 'Inter_400Regular',
+  sansMedium: 'Inter_500Medium',
+  sansSemibold: 'Inter_600SemiBold',
+} as const;
+
+export const space = {
+  screen: 18,
+  screenLg: 24,
+  gap: 12,
+} as const;
