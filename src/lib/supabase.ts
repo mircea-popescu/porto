@@ -19,9 +19,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * Plasă de siguranță: niciun request Supabase (query sau refresh de token) nu poate
  * rămâne în aer la nesfârșit. Fără asta, un refresh care nu se mai întoarce blochează
  * `getSession()`, deci toate query-urile, deci ecranul rămâne în loading infinit.
- * 30s e generos — nu taie request-uri lente reale, doar pe cele cu adevărat blocate.
+ * 10s: suficient pentru rețele lente reale, scurt cât să nu pară blocat infinit.
  */
-const REQUEST_TIMEOUT_MS = 30000;
+const REQUEST_TIMEOUT_MS = 10000;
 function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
