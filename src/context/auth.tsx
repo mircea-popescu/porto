@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 /** Înregistrează push tokenul când există o sesiune (precondiție Faza 2, §13). */
 function onSession(session: Session | null): void {
   if (!session) return;
-  registerForPushNotifications().catch((err) =>
+  registerForPushNotifications(session.user.id).catch((err) =>
     console.warn('registerForPushNotifications:', err?.message ?? err),
   );
 }
@@ -39,26 +39,45 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let done = false;
+    const finish = (next: Session | null) => {
+      if (done) return;
+      done = true;
+      setSession(next);
+      setLoading(false);
+    };
+
     // Sesiunea curentă (dacă există) din storage.
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-      onSession(data.session);
+      finish(data.session);
+      // Amânăm efectele secundare (push, flags) în afara lock-ului de auth:
+      // apeluri supabase re-intrante din acest flux blochează sesiunea pe RN.
+      setTimeout(() => onSession(data.session), 0);
     });
+
+    // Plasă de siguranță: dacă getSession nu se rezolvă (lock blocat pe un refresh
+    // de token care stă), nu lăsăm UI-ul în loading infinit.
+    const safety = setTimeout(() => finish(null), 5000);
 
     // Sincronizare la login / logout / refresh.
     const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       // La autentificare: reîncarcă flag-urile și înregistrează push tokenul.
+      // setTimeout(0) scoate apelurile supabase din callback (anti-deadlock lock auth).
       if (event === 'SIGNED_IN') {
-        refreshFlags();
-        onSession(newSession);
+        setTimeout(() => {
+          refreshFlags();
+          onSession(newSession);
+        }, 0);
       } else if (event === 'SIGNED_OUT') {
-        refreshFlags();
+        setTimeout(() => refreshFlags(), 0);
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      clearTimeout(safety);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signIn: AuthContextValue['signIn'] = async (email, password) => {
