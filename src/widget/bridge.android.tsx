@@ -1,3 +1,4 @@
+"use no memo";
 /**
  * Bridge widget Android — react-native-android-widget.
  * Importat doar pe Android (Metro: bridge.android.tsx).

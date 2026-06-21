@@ -1,3 +1,4 @@
+"use no memo";
 /**
  * Task handler Android (react-native-android-widget).
  * Rulează într-un context JS headless când OS-ul cere randarea widget-ului

@@ -1,3 +1,4 @@
+"use no memo";
 /**
  * Layout-ul widget-ului Android (react-native-android-widget).
  * Folosit atât de bridge.android (push din app) cât și de task-handler (render OS).
