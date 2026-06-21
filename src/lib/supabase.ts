@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, processLock } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 
 import { Database } from '@/types/database';
@@ -24,6 +24,13 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     // Nu există URL de redirect de parsat în RN (relevant doar pe web).
     detectSessionInUrl: false,
+    // Lock obligatoriu pe React Native: fiecare query face `getSession()`, iar
+    // ecranul Home lansează 3 query-uri în paralel. Fără lock, cele 3 apeluri
+    // concurente de refresh de token (când access token-ul e aproape de expirare)
+    // intră în cursă pe calea „lockless" și nu se mai rezolvă → loading infinit.
+    // `processLock` le serializează: primul reîmprospătează, restul citesc tokenul.
+    // Vezi docs Supabase „Use Supabase Auth with React Native".
+    lock: processLock,
   },
 });
 
