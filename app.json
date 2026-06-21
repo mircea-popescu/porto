@@ -10,7 +10,10 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.porto.habit",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.app.porto.habit"]
+      }
     },
     "android": {
       "package": "app.porto.habit",
@@ -38,7 +41,22 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.app.porto.habit",
+          "widgets": [
+            {
+              "name": "PortoGoals",
+              "supportedFamilies": ["systemMedium"],
+              "displayName": "Porto Goals",
+              "description": "Urmărește goalurile tale",
+              "contentMarginsDisabled": false
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

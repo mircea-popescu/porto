@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -8,6 +9,7 @@ import { Database } from '@/types/database';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { session, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,10 @@ export default function ProfileScreen() {
         <Field label="Email" value={session?.user.email ?? '—'} />
       </View>
 
+      <TouchableOpacity style={styles.widgetBtn} onPress={() => router.push('/widget-settings')}>
+        <Text style={styles.widgetBtnText}>Configurează widget</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.signOut} onPress={onSignOut}>
         <Text style={styles.signOutText}>Deconectează-te</Text>
       </TouchableOpacity>
@@ -89,6 +95,15 @@ const styles = StyleSheet.create({
   field: { gap: 2 },
   fieldLabel: { fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 },
   fieldValue: { fontSize: 16, color: '#0f172a', fontWeight: '500' },
+  widgetBtn: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  widgetBtnText: { color: '#0f172a', fontSize: 16, fontWeight: '500' },
   signOut: {
     borderWidth: 1,
     borderColor: '#ef4444',
