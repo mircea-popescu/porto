@@ -18,19 +18,23 @@ const TRACK = '#e2e8f0';
 
 function ProgressBar({ ratio, color }: { ratio: number; color: `#${string}` }) {
   const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-  // RemoteViews/flex nu suportă lățimi în %, deci folosim ponderi flex (umplut vs gol).
+  // RemoteViews/LinearLayout nu suportă borderRadius — folosim flex weights fără rundare.
+  if (pct === 0) {
+    return <FlexWidget style={{ height: 6, width: 'match_parent', backgroundColor: TRACK }} />;
+  }
+  if (pct >= 100) {
+    return <FlexWidget style={{ height: 6, width: 'match_parent', backgroundColor: color }} />;
+  }
   return (
     <FlexWidget
       style={{
         height: 6,
         width: 'match_parent',
         backgroundColor: TRACK,
-        borderRadius: 3,
         flexDirection: 'row',
-        alignItems: 'flex-start',
       }}
     >
-      <FlexWidget style={{ flex: pct, height: 6, backgroundColor: color, borderRadius: 3 }} />
+      <FlexWidget style={{ flex: pct, height: 6, backgroundColor: color }} />
       <FlexWidget style={{ flex: 100 - pct, height: 6 }} />
     </FlexWidget>
   );
@@ -43,7 +47,6 @@ export function PortoWidgetAndroid({ goals }: { goals: WidgetGoal[] }) {
         height: 'match_parent',
         width: 'match_parent',
         backgroundColor: BG,
-        borderRadius: 16,
         padding: 14,
         flexDirection: 'column',
         justifyContent: 'flex-start',
