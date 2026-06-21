@@ -165,8 +165,12 @@ La atingerea unui milestone de către un user urmărit, **toți followerii** pri
 | Auth + DB + Realtime | Supabase (Postgres, Auth, Realtime) |
 | Cron / push worker | Supabase Edge Functions (cu scheduling) |
 | Push notifications | Expo Push Notifications |
+| Widget home-screen | iOS: `expo-widgets` (SwiftUI) · Android: `react-native-android-widget` (RemoteViews) |
+| Build & livrare | EAS Build (APK pentru sideload / AAB pentru store) + EAS Update (OTA pentru schimbări JS) |
 
 **Decizie:** Supabase pur, fără Railway. Supabase oferă auth, DB, realtime și cron într-un singur loc, fără servere de administrat.
+
+**Decizie (livrare):** Build nativ prin EAS (managed workflow, fără directoare `android/`/`ios/`). Schimbările doar-JS se livrează **OTA** prin `eas update` (canalul `preview`), fără rebuild de ~20 min. `runtimeVersion` are politica `appVersion` — un update OTA ajunge doar la build-urile cu același `version` din `app.json`; orice bump de versiune cere un build nou.
 
 ---
 
@@ -252,12 +256,21 @@ porto/
 │       ├── milestone-checker/  # verifică milestone-uri după fiecare confirmare
 │       ├── inactivity-checker/ # cron zilnic pentru Tip B inactive 7 zile
 │       └── notification-cleanup/ # șterge notificări > 90 zile
+├── src/widget/                 # widget home-screen, cross-platform (vezi §13.5)
+│   ├── types.ts                # WidgetGoal / WidgetData (fără dependențe native)
+│   ├── bridge.ts               # no-op (web / fallback)
+│   ├── bridge.ios.tsx          # expo-widgets (SwiftUI) — rezolvat de Metro pe iOS
+│   ├── bridge.android.tsx      # react-native-android-widget — rezolvat de Metro pe Android
+│   ├── PortoWidgetAndroid.tsx  # layout-ul widget-ului Android
+│   └── task-handler.tsx        # render headless al widget-ului Android (cerut de OS)
 ├── docs/
 │   ├── PRD_Porto.md            # acest fișier
 │   └── schema.html             # diagrama vizuală a schemei DB
 ├── .env.local                  # chei Supabase (nu se commitează)
 ├── .gitignore
-├── app.json                    # config Expo (name: "Porto", slug: "porto")
+├── index.js                    # entry point: expo-router + înregistrare task handler widget (Android)
+├── app.json                    # config Expo (name: "Porto", slug: "porto") + plugins widget + updates OTA
+├── eas.json                    # profile build EAS (development/preview/production) + env Supabase
 ├── package.json
 └── README.md
 ```
@@ -320,14 +333,14 @@ Fiecare task, cu *scopul* lui și ce livrează concret:
 
 **Concluzie Faza 1:** pe un device real, un user poate parcurge tot fluxul single-player, iar notificările **locale** funcționează. Vezi totuși gap-ul de la §13.2.
 
-### 13.2 Gap care blochează push-ul remote (precondiție, nu „nice to have")
+### 13.2 Înregistrare push token — ✅ REZOLVAT
 
-Edge Functions-urile din pasul 9 trimit push către token-urile din tabelul `user_devices`. **Nimic din aplicație nu scrie încă în `user_devices`** (`expo_push_token` apare doar în migrări, tipuri și Edge Functions — în niciun fișier din `src/`). Consecință:
+Edge Functions-urile din pasul 9 trimit push către token-urile din tabelul `user_devices`. Acest gap e acum închis: la stabilirea sesiunii, `src/lib/push.ts` (`registerForPushNotifications`) cere permisiunea de notificări, ia Expo push token-ul și face upsert în `user_devices` (cu `platform`, `is_active`, `last_seen_at`). Apelul e declanșat din `src/context/auth.tsx`.
 
 - Notificările **locale** (programate pe device) — **merg**.
-- Notificările **remote** (daily-reminder, inactivity, milestone social) — **nu ajung la nimeni**, fiindcă nu există token-uri înregistrate.
+- Notificările **remote** (daily-reminder, inactivity, milestone social) — pipeline-ul e funcțional cap-coadă (token-uri înregistrate).
 
-**Ce trebuie:** la login (pe device real, nu web), cere permisiunea de notificări, ia Expo push token-ul și fă upsert în `user_devices` (cu `platform`, `is_active`, `last_seen_at`). Toate apelurile prin `lib/notifications.ts` (§12). Abia după asta pipeline-ul push remote e funcțional cap-coadă. *(Apare și ca primul task din Faza 2, dar e enumerat aici fiindcă afectează deja Faza 1.)*
+**Notă de robustețe (RN):** apelurile Supabase auth declanșate din `onAuthStateChange` / `getSession` se amână cu `setTimeout(0)` și `registerForPushNotifications` primește `userId` din sesiune (nu apelează `supabase.auth.getUser()`), ca să nu re-intre în lock-ul de auth — altfel sesiunea nu se rezolvă la redeschiderea app-ului (loading infinit).
 
 ### 13.3 Faza 2 — Social (neîncepută)
 
@@ -347,9 +360,24 @@ Tabelele (`follows`, `emoji_reactions`) și ENUM-urile există deja în DB din m
 - Înregistrarea push token în `user_devices` e precondiție pentru toate push-urile.
 - Milestone „lună întreagă" Tip A = dată calendaristică pură (`started_at + N luni`).
 
+### 13.5 Widget home-screen + livrare OTA — ✅ IMPLEMENTAT
+
+Widget 2×4 (medium) cu progresul a maximum 3 goaluri alese de user, fără să deschidă app-ul. Tap pe un rând → deep link `porto://goal/{id}` → ecranul de detaliu.
+
+**Arhitectură cross-platform (Metro platform-files).** Un bridge uniform expune `pushWidgetData` / `reloadWidget`, iar Metro alege automat fișierul per platformă, deci Android nu importă niciodată module iOS și invers:
+- `bridge.ios.tsx` → `expo-widgets` (SwiftUI, App Group `group.app.porto.habit`).
+- `bridge.android.tsx` → `react-native-android-widget` (RemoteViews); `PortoWidgetAndroid.tsx` e layout-ul, `task-handler.tsx` îl randează headless la cererea OS-ului.
+- Datele se scriu în AsyncStorage (`@porto/widget_data`) ca task handler-ul Android să le citească fără rețea/auth. Configurarea goalurilor: `src/app/widget-settings.tsx`.
+
+**Decizii / capcane rezolvate (Android):**
+- **Crash la pornire** — `@expo/ui` (SDK 55) e incompatibil binar cu expo-modules-core (SDK 54); exclus din autolinking Android prin `package.json` → `expo.autolinking.android.exclude`. E folosit doar pe iOS, deci Metro nu-l include pe Android.
+- **Widget invizibil** — React Compiler (`experiments.reactCompiler`) împachetează componentele, dar `react-native-android-widget` apelează funcțiile componente direct. Fix: directiva `"use no memo";` în fișierele widget Android.
+
+**Livrare:** prima dată build complet EAS; ulterior schimbările doar-JS (inclusiv layout widget) merg **OTA** prin `eas update --branch preview` (vezi §8).
+
 ### 13.4 Ce mai trebuie ca aplicația să fie complet funcțională (rezumat)
 
-1. **Înregistrarea push token** (§13.2) — singurul lucru care lipsește ca push-urile remote din Faza 1 să funcționeze efectiv.
+1. **Înregistrarea push token** (§13.2) — ✅ rezolvat; push-urile remote din Faza 1 au token-uri.
 2. **Faza 2 integrală** (§13.3, 6 task-uri) — pentru produsul social complet.
 3. **Deploy + cron** pe proiectul cloud — `supabase functions deploy` + programarea cron (vezi `supabase/functions/README.md` și migrarea `20240618000001_cron_jobs.sql`).
 
@@ -386,3 +414,8 @@ Tabelele (`follows`, `emoji_reactions`) și ENUM-urile există deja în DB din m
 | 23 | Monetizare | Totul gratuit |
 | 24 | Offline | Nu — necesită conexiune |
 | 25 | Numele aplicației | Porto |
+| 26 | Widget cross-platform | Un bridge uniform + Metro platform-files (iOS `expo-widgets`, Android `react-native-android-widget`) |
+| 27 | Livrare nativă | EAS Build (managed); APK pentru sideload (`preview`), AAB pentru store (`production`) |
+| 28 | Update-uri JS | OTA prin EAS Update; `runtimeVersion` = `appVersion` |
+| 29 | `@expo/ui` pe Android | Exclus din autolinking (incompatibil binar SDK 55 vs 54); doar iOS |
+| 30 | React Compiler + widget Android | `"use no memo";` în fișierele widget (biblioteca cere funcții raw) |
