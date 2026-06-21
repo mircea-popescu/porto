@@ -19,6 +19,7 @@ import { font, palette } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 import { Category, GoalWithProgress, listCategories, listGoals, listUnits, Unit } from '@/lib/goals';
 import { syncGoalReminders } from '@/lib/notifications';
+import { syncWidgetData } from '@/lib/widget-storage';
 
 export default function Home() {
   const router = useRouter();
@@ -38,8 +39,8 @@ export default function Home() {
     setGoals(g);
     setCategories(c);
     setUnits(u);
-    // Resincronizează mementourile locale cu goalurile curente (no-op pe web).
     syncGoalReminders(g).catch((err) => console.warn('syncGoalReminders:', err.message));
+    syncWidgetData(g, c).catch((err) => console.warn('syncWidgetData:', err.message));
   }, []);
 
   // Reîncarcă la fiecare intrare pe tab (ex. după creare).

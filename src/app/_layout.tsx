@@ -106,6 +106,7 @@ function RootNavigator() {
       <Stack.Screen name="goal/[id]" />
       <Stack.Screen name="user/[id]" />
       <Stack.Screen name="user/[id]/goal/[goalId]" />
+      <Stack.Screen name="widget-settings" options={{ headerShown: true, title: 'Widget' }} />
     </Stack>
   );
 }

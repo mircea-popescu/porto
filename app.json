@@ -10,7 +10,10 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "app.porto.habit",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.app.porto.habit"]
+      }
     },
     "android": {
       "package": "app.porto.habit",
@@ -39,16 +42,44 @@
         }
       ],
       "expo-notifications",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.app.porto.habit",
+          "widgets": [
+            {
+              "name": "PortoGoals",
+              "supportedFamilies": ["systemMedium"],
+              "displayName": "Porto Goals",
+              "description": "Urmărește goalurile tale",
+              "contentMarginsDisabled": false
+            }
+          ]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "PortoGoals",
+              "label": "Porto Goals",
+              "description": "Urmărește goalurile tale",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
-      }
     }
   }
 }

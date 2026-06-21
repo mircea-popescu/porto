@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { Database } from '@/types/database';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { session, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -77,6 +79,12 @@ export default function ProfileScreen() {
         <Field label="Username" value={profile ? '@' + profile.username : '—'} />
         <Field label="Email" value={session?.user.email ?? '—'} />
       </Card>
+
+      <Button
+        label="Configurează widget"
+        variant="ghost"
+        onPress={() => router.push('/widget-settings')}
+      />
 
       <Button label="Deconectează-te" variant="dangerOutline" onPress={onSignOut} />
     </ScrollView>
