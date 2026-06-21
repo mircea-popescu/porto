@@ -30,6 +30,7 @@ export default function Home() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
 
   const displayName =
     (session?.user.user_metadata?.display_name as string | undefined)?.split(' ')[0] ?? null;
@@ -48,8 +49,12 @@ export default function Home() {
     useCallback(() => {
       let active = true;
       setLoading(true);
+      setError(false);
       load()
-        .catch((err) => console.warn('listGoals:', err.message))
+        .catch((err) => {
+          console.warn('listGoals:', err.message);
+          if (active) setError(true);
+        })
         .finally(() => {
           if (active) setLoading(false);
         });
@@ -58,6 +63,17 @@ export default function Home() {
       };
     }, [load]),
   );
+
+  // Reîncercare manuală după o eroare (ex. request expirat pe rețea proastă).
+  async function retry() {
+    setLoading(true);
+    setError(false);
+    await load().catch((err) => {
+      console.warn('listGoals:', err.message);
+      setError(true);
+    });
+    setLoading(false);
+  }
 
   async function onRefresh() {
     setRefreshing(true);
@@ -69,6 +85,20 @@ export default function Home() {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator size="large" color={palette.accent} />
+      </View>
+    );
+  }
+
+  // Dacă încărcarea a eșuat (ex. request expirat / rețea proastă), arătăm un mesaj
+  // recuperabil în loc de spinner infinit sau de ecran „gol" înșelător.
+  if (error) {
+    return (
+      <View style={[styles.screen, styles.center, { paddingHorizontal: 32, gap: 16 }]}>
+        <Ionicons name="cloud-offline-outline" size={48} color={palette.ink4} />
+        <Text style={styles.empty}>
+          Nu am putut încărca datele. Verifică conexiunea și încearcă din nou.
+        </Text>
+        <Button label="Reîncearcă" onPress={retry} />
       </View>
     );
   }
