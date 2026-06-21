@@ -1,10 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Category, GoalWithProgress } from '@/lib/goals';
 import { CATEGORY_STYLE } from '@/constants/categories';
-import { portoGoalsWidget, WidgetGoal } from '@/widget/PortoWidget';
+import { Category, GoalWithProgress } from '@/lib/goals';
+import { pushWidgetData, reloadWidget } from '@/widget/bridge';
+import { WidgetData, WidgetGoal } from '@/widget/types';
 
 const WIDGET_GOAL_IDS_KEY = '@porto/widget_goal_ids';
+/** Cache cu datele randate ale widget-ului (citit de task handler-ul Android headless). */
+const WIDGET_DATA_KEY = '@porto/widget_data';
 
 export async function getWidgetGoalIds(): Promise<string[]> {
   try {
@@ -21,14 +24,14 @@ export async function setWidgetGoalIds(ids: string[]): Promise<void> {
   await AsyncStorage.setItem(WIDGET_GOAL_IDS_KEY, JSON.stringify(ids.slice(0, 3)));
 }
 
-export async function syncWidgetData(
+function buildWidgetGoals(
   allGoals: GoalWithProgress[],
   categories: Category[],
-): Promise<void> {
-  const ids = await getWidgetGoalIds();
+  ids: string[],
+): WidgetGoal[] {
   const catMap = new Map(categories.map((c) => [c.id, c.slug]));
 
-  const goals: WidgetGoal[] = ids
+  return ids
     .map((id) => allGoals.find((g) => g.id === id))
     .filter((g): g is GoalWithProgress => g != null && !g.is_deleted)
     .map((g) => {
@@ -46,11 +49,26 @@ export async function syncWidgetData(
         category_color: color,
       };
     });
+}
 
-  portoGoalsWidget.updateSnapshot({ goals });
+export async function syncWidgetData(
+  allGoals: GoalWithProgress[],
+  categories: Category[],
+): Promise<void> {
+  const ids = await getWidgetGoalIds();
+  const goals = buildWidgetGoals(allGoals, categories, ids);
+  const data: WidgetData = { goals };
+
+  // Cache pentru randarea headless (Android) + sursa pentru reloadWidget.
+  await AsyncStorage.setItem(WIDGET_DATA_KEY, JSON.stringify(data));
+  // Push imediat către widget-ul nativ (no-op pe web).
+  pushWidgetData(goals);
 }
 
 export async function clearWidgetData(): Promise<void> {
   await AsyncStorage.removeItem(WIDGET_GOAL_IDS_KEY);
-  portoGoalsWidget.updateSnapshot({ goals: [] });
+  await AsyncStorage.setItem(WIDGET_DATA_KEY, JSON.stringify({ goals: [] }));
+  pushWidgetData([]);
 }
+
+export { reloadWidget };

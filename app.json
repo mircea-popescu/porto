@@ -56,6 +56,24 @@
             }
           ]
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "PortoGoals",
+              "label": "Porto Goals",
+              "description": "Urmărește goalurile tale",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
       ]
     ],
     "experiments": {

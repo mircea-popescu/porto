@@ -14,10 +14,10 @@ import { notify } from '@/lib/dialog';
 import { Category, GoalWithProgress, listCategories, listGoals } from '@/lib/goals';
 import {
   getWidgetGoalIds,
+  reloadWidget,
   setWidgetGoalIds,
   syncWidgetData,
 } from '@/lib/widget-storage';
-import { portoGoalsWidget } from '@/widget/PortoWidget';
 
 export default function WidgetSettings() {
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function WidgetSettings() {
     try {
       await setWidgetGoalIds(selected);
       await syncWidgetData(goals, categories);
-      portoGoalsWidget.reload();
+      reloadWidget();
       router.back();
     } catch (err) {
       notify('Eroare', (err as Error).message);
