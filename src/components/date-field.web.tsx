@@ -1,3 +1,4 @@
+import { palette, radius } from '@/constants/theme';
 import { toISODate } from '@/lib/goals';
 
 export type DateFieldProps = {
@@ -18,12 +19,12 @@ export function DateField({ value, onChange, maximumDate }: DateFieldProps) {
         if (v) onChange(new Date(v + 'T00:00:00'));
       }}
       style={{
-        padding: 12,
-        fontSize: 16,
-        borderRadius: 10,
-        border: '1px solid #cbd5e1',
-        color: '#0f172a',
-        backgroundColor: '#fff',
+        padding: 14,
+        fontSize: 15,
+        borderRadius: radius.input,
+        border: `1px solid ${palette.line}`,
+        color: palette.ink,
+        backgroundColor: palette.surface,
         fontFamily: 'inherit',
       }}
     />

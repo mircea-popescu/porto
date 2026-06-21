@@ -1,21 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Avatar, Eyebrow, ScreenTitle } from '@/components/ui';
+import { font, palette, radius, shadow } from '@/constants/theme';
 import { notify } from '@/lib/dialog';
 import { listFollowing, Profile, searchUsers } from '@/lib/social';
 
 export default function SearchScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Profile[]>([]);
   const [following, setFollowing] = useState<Profile[]>([]);
@@ -54,33 +50,38 @@ export default function SearchScreen() {
   const data = hasQuery ? results : following;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Caută după nume…"
-          placeholderTextColor="#94a3b8"
-          value={query}
-          onChangeText={setQuery}
-          onSubmitEditing={onSearch}
-          returnKeyType="search"
-          autoCapitalize="none"
-        />
-        <Pressable style={styles.searchBtn} onPress={onSearch}>
-          <Ionicons name="search" size={20} color="#fff" />
-        </Pressable>
+    <View style={styles.screen}>
+      <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
+        <Eyebrow>Comunitate</Eyebrow>
+        <ScreenTitle>Caută prieteni</ScreenTitle>
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Caută după nume…"
+            placeholderTextColor={palette.ink4}
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={onSearch}
+            returnKeyType="search"
+            autoCapitalize="none"
+          />
+          <Pressable
+            style={({ pressed }) => [styles.searchBtn, pressed && { opacity: 0.85 }]}
+            onPress={onSearch}
+          >
+            <Ionicons name="search" size={20} color="#fff" />
+          </Pressable>
+        </View>
       </View>
 
       {searching ? (
-        <ActivityIndicator style={{ marginTop: 24 }} />
+        <ActivityIndicator style={{ marginTop: 24 }} color={palette.accent} />
       ) : (
         <FlatList
           data={data}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={
-            <Text style={styles.sectionLabel}>
-              {hasQuery ? 'Rezultate' : 'Urmăriți'}
-            </Text>
+            <Text style={styles.sectionLabel}>{hasQuery ? 'Rezultate' : 'Urmăriți'}</Text>
           }
           ListEmptyComponent={
             <Text style={styles.empty}>
@@ -89,10 +90,8 @@ export default function SearchScreen() {
                 : 'Nu urmărești încă pe nimeni. Caută un nume mai sus.'}
             </Text>
           }
-          renderItem={({ item }) => (
-            <UserRow profile={item} onPress={() => openProfile(item.id)} />
-          )}
-          contentContainerStyle={styles.list}
+          renderItem={({ item }) => <UserRow profile={item} onPress={() => openProfile(item.id)} />}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 96 }]}
         />
       )}
     </View>
@@ -101,71 +100,70 @@ export default function SearchScreen() {
 
 function UserRow({ profile, onPress }: { profile: Profile; onPress: () => void }) {
   return (
-    <Pressable style={({ pressed }) => [styles.row, pressed && styles.rowPressed]} onPress={onPress}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {profile.display_name.charAt(0).toUpperCase()}
-        </Text>
-      </View>
+    <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]} onPress={onPress}>
+      <Avatar name={profile.display_name} size={42} />
       <View style={{ flex: 1 }}>
         <Text style={styles.name}>{profile.display_name}</Text>
         <Text style={styles.username}>@{profile.username}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+      <Ionicons name="chevron-forward" size={18} color={palette.ink4} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  searchRow: { flexDirection: 'row', gap: 8 },
+  screen: { flex: 1, backgroundColor: palette.bg },
+  head: { paddingHorizontal: 18, gap: 4, paddingBottom: 12 },
+  searchRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
+    borderColor: palette.line,
+    borderRadius: radius.input,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#fff',
+    paddingVertical: 12,
+    fontFamily: font.sans,
+    fontSize: 15,
+    color: palette.ink,
+    backgroundColor: palette.surface,
+    ...shadow.sm,
   },
   searchBtn: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
+    backgroundColor: palette.accent,
+    borderRadius: radius.input,
     paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadow.accentBtn,
   },
-  list: { paddingVertical: 12, gap: 8 },
+  list: { paddingHorizontal: 18, paddingTop: 4, gap: 10 },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748b',
+    fontFamily: font.sansSemibold,
+    fontSize: 12,
+    letterSpacing: 0.48,
+    color: palette.ink3,
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  empty: { fontSize: 15, color: '#64748b', lineHeight: 22, marginTop: 24, textAlign: 'center' },
+  empty: {
+    fontFamily: font.sans,
+    fontSize: 15,
+    color: palette.ink3,
+    lineHeight: 22,
+    marginTop: 24,
+    textAlign: 'center',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    padding: 14,
+    backgroundColor: palette.surface,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: palette.line,
+    ...shadow.sm,
   },
-  rowPressed: { opacity: 0.6 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#dbeafe',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { fontSize: 18, fontWeight: '700', color: '#2563eb' },
-  name: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  username: { fontSize: 13, color: '#64748b' },
+  name: { fontFamily: font.sansSemibold, fontSize: 16, color: palette.ink },
+  username: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink3, marginTop: 1 },
 });

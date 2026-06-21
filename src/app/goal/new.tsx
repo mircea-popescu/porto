@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -9,11 +10,13 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateField } from '@/components/date-field';
+import { Button, Eyebrow, ScreenTitle } from '@/components/ui';
+import { font, palette, radius, shadow } from '@/constants/theme';
 import { notify } from '@/lib/dialog';
 import {
   Category,
@@ -30,6 +33,7 @@ type UnitChoice = number | 'custom';
 
 export default function NewGoal() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -116,119 +120,142 @@ export default function NewGoal() {
 
   if (loadingRefs) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator size="large" color={palette.accent} />
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Label>Titlu</Label>
-      <TextInput
-        style={styles.input}
-        placeholder="ex. 100 de zile fără fumat"
-        placeholderTextColor="#94a3b8"
-        value={title}
-        onChangeText={setTitle}
-      />
-
-      <Label>Categorie</Label>
-      <View style={styles.chipRow}>
-        {categories.map((c) => (
-          <Chip key={c.id} active={categoryId === c.id} onPress={() => setCategoryId(c.id)}>
-            {c.name}
-          </Chip>
-        ))}
+    <View style={styles.screen}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.6 }]}
+          hitSlop={8}
+        >
+          <Ionicons name="close" size={24} color={palette.ink} />
+        </Pressable>
       </View>
 
-      <Label>Tip</Label>
-      <View style={styles.segment}>
-        <SegmentButton active={type === 'daily'} onPress={() => setType('daily')}>
-          Zilnic (confirmare)
-        </SegmentButton>
-        <SegmentButton active={type === 'value'} onPress={() => setType('value')}>
-          Valoare
-        </SegmentButton>
-      </View>
+      <ScrollView
+        contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 48 }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <Eyebrow>Obicei nou</Eyebrow>
+          <ScreenTitle>Goal nou</ScreenTitle>
+        </View>
 
-      {type === 'daily' ? (
-        <>
-          <Label>Câte zile (orizont)</Label>
+        <Field label="Titlu">
           <TextInput
             style={styles.input}
-            placeholder="ex. 100"
-            placeholderTextColor="#94a3b8"
-            value={targetDays}
-            onChangeText={setTargetDays}
-            keyboardType="number-pad"
+            placeholder="ex. 100 de zile fără fumat"
+            placeholderTextColor={palette.ink4}
+            value={title}
+            onChangeText={setTitle}
           />
-        </>
-      ) : (
-        <>
-          <Label>Valoare țintă</Label>
-          <TextInput
-            style={styles.input}
-            placeholder="ex. 1000"
-            placeholderTextColor="#94a3b8"
-            value={targetValue}
-            onChangeText={setTargetValue}
-            keyboardType="decimal-pad"
-          />
+        </Field>
 
-          <Label>Unitate</Label>
+        <Field label="Categorie">
           <View style={styles.chipRow}>
-            {units.map((u) => (
-              <Chip key={u.id} active={unitChoice === u.id} onPress={() => setUnitChoice(u.id)}>
-                {u.symbol ?? u.name}
+            {categories.map((c) => (
+              <Chip key={c.id} active={categoryId === c.id} onPress={() => setCategoryId(c.id)}>
+                {c.name}
               </Chip>
             ))}
-            <Chip active={unitChoice === 'custom'} onPress={() => setUnitChoice('custom')}>
-              Custom…
-            </Chip>
           </View>
-          {unitChoice === 'custom' && (
+        </Field>
+
+        <Field label="Tip">
+          <View style={styles.segment}>
+            <SegmentButton active={type === 'daily'} onPress={() => setType('daily')}>
+              Zilnic (confirmare)
+            </SegmentButton>
+            <SegmentButton active={type === 'value'} onPress={() => setType('value')}>
+              Valoare
+            </SegmentButton>
+          </View>
+        </Field>
+
+        {type === 'daily' ? (
+          <Field label="Câte zile (orizont)">
             <TextInput
               style={styles.input}
-              placeholder="ex. ședințe"
-              placeholderTextColor="#94a3b8"
-              value={unitCustom}
-              onChangeText={setUnitCustom}
-              autoCapitalize="none"
+              placeholder="ex. 100"
+              placeholderTextColor={palette.ink4}
+              value={targetDays}
+              onChangeText={setTargetDays}
+              keyboardType="number-pad"
             />
-          )}
-        </>
-      )}
-
-      <Label>Data de start</Label>
-      <DateField value={startedAt} maximumDate={startOfToday()} onChange={setStartedAt} />
-
-      {type === 'daily' && isBackdated && (
-        <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>
-            M-am ținut de la data de start până azi (marchează zilele ca ținute)
-          </Text>
-          <Switch value={backfill} onValueChange={setBackfill} />
-        </View>
-      )}
-
-      <View style={styles.switchRow}>
-        <Text style={styles.switchLabel}>Public (vizibil prietenilor care te urmăresc)</Text>
-        <Switch value={isPublic} onValueChange={setIsPublic} />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.button, submitting && styles.buttonDisabled]}
-        onPress={onSubmit}
-        disabled={submitting}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
+          </Field>
         ) : (
-          <Text style={styles.buttonText}>Creează goalul</Text>
+          <>
+            <Field label="Valoare țintă">
+              <TextInput
+                style={styles.input}
+                placeholder="ex. 1000"
+                placeholderTextColor={palette.ink4}
+                value={targetValue}
+                onChangeText={setTargetValue}
+                keyboardType="decimal-pad"
+              />
+            </Field>
+
+            <Field label="Unitate">
+              <View style={styles.chipRow}>
+                {units.map((u) => (
+                  <Chip key={u.id} active={unitChoice === u.id} onPress={() => setUnitChoice(u.id)}>
+                    {u.symbol ?? u.name}
+                  </Chip>
+                ))}
+                <Chip active={unitChoice === 'custom'} onPress={() => setUnitChoice('custom')}>
+                  Custom…
+                </Chip>
+              </View>
+            </Field>
+            {unitChoice === 'custom' && (
+              <TextInput
+                style={styles.input}
+                placeholder="ex. ședințe"
+                placeholderTextColor={palette.ink4}
+                value={unitCustom}
+                onChangeText={setUnitCustom}
+                autoCapitalize="none"
+              />
+            )}
+          </>
         )}
-      </TouchableOpacity>
-    </ScrollView>
+
+        <Field label="Data de start">
+          <DateField value={startedAt} maximumDate={startOfToday()} onChange={setStartedAt} />
+        </Field>
+
+        {type === 'daily' && isBackdated && (
+          <SwitchRow
+            label="M-am ținut de la start până azi"
+            hint="Marchează zilele din interval ca ținute."
+            value={backfill}
+            onValueChange={setBackfill}
+          />
+        )}
+
+        <SwitchRow
+          label="Public"
+          hint="Vizibil prietenilor care te urmăresc."
+          value={isPublic}
+          onValueChange={setIsPublic}
+        />
+
+        <Button
+          label="Creează goalul"
+          onPress={onSubmit}
+          disabled={submitting}
+          loading={submitting}
+          style={{ marginTop: 16 }}
+        />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -243,8 +270,41 @@ function startOfToday(): Date {
   return d;
 }
 
-function Label({ children }: { children: string }) {
-  return <Text style={styles.label}>{children}</Text>;
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+function SwitchRow({
+  label,
+  hint,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  hint: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+}) {
+  return (
+    <View style={styles.switchRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.switchLabel}>{label}</Text>
+        <Text style={styles.switchHint}>{hint}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: palette.surface2, true: palette.accent }}
+        thumbColor="#fff"
+        ios_backgroundColor={palette.surface2}
+      />
+    </View>
+  );
 }
 
 function Chip({
@@ -280,60 +340,67 @@ function SegmentButton({
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, gap: 8, paddingBottom: 48 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 13, fontWeight: '600', color: '#475569', marginTop: 12 },
+  screen: { flex: 1, backgroundColor: palette.bg },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  topBar: { paddingHorizontal: 12, paddingBottom: 4 },
+  closeBtn: { width: 36, height: 36, alignItems: 'flex-start', justifyContent: 'center' },
+  container: { paddingHorizontal: 18, paddingTop: 4, gap: 14 },
+  header: { gap: 4, marginBottom: 4 },
+  field: { gap: 7 },
+  label: {
+    fontFamily: font.sansSemibold,
+    fontSize: 12,
+    letterSpacing: 0.48,
+    textTransform: 'uppercase',
+    color: palette.ink3,
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
+    borderColor: palette.line,
+    borderRadius: radius.input,
     paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 14 : 10,
-    fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#fff',
+    paddingVertical: Platform.OS === 'ios' ? 14 : 11,
+    fontFamily: font.sans,
+    fontSize: 15,
+    color: palette.ink,
+    backgroundColor: palette.surface,
+    ...shadow.sm,
   },
-  dateText: { fontSize: 16, color: '#0f172a' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    backgroundColor: '#fff',
+    borderColor: palette.line,
+    backgroundColor: palette.surface,
   },
-  chipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  chipText: { color: '#334155', fontWeight: '500' },
+  chipActive: { backgroundColor: palette.accent, borderColor: palette.accent },
+  chipText: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink2 },
   chipTextActive: { color: '#fff' },
-  segment: { flexDirection: 'row', gap: 8 },
+  segment: {
+    flexDirection: 'row',
+    gap: 4,
+    padding: 4,
+    borderRadius: radius.btn,
+    backgroundColor: palette.surface2,
+  },
   segmentBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
+    paddingVertical: 10,
+    borderRadius: radius.btn - 4,
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
-  segmentBtnActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-  segmentText: { color: '#334155', fontWeight: '600' },
-  segmentTextActive: { color: '#fff' },
+  segmentBtnActive: { backgroundColor: palette.surface, ...shadow.sm },
+  segmentText: { fontFamily: font.sansSemibold, fontSize: 13, color: palette.ink2 },
+  segmentTextActive: { color: palette.accent },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    marginTop: 16,
+    marginTop: 4,
   },
-  switchLabel: { flex: 1, color: '#334155', fontSize: 14 },
-  button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  switchLabel: { fontFamily: font.sansSemibold, fontSize: 14, color: palette.ink },
+  switchHint: { fontFamily: font.sansMedium, fontSize: 12, color: palette.ink3, marginTop: 2 },
 });

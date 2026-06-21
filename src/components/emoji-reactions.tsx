@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { font, palette, radius } from '@/constants/theme';
 import { notify } from '@/lib/dialog';
 import {
   addReaction,
@@ -71,7 +72,11 @@ export function EmojiReactions({ goalId, canReact }: Props) {
             return (
               <Pressable
                 key={e.type}
-                style={[styles.pickBtn, selected && styles.pickBtnSelected]}
+                style={({ pressed }) => [
+                  styles.pickBtn,
+                  selected && styles.pickBtnSelected,
+                  pressed && { opacity: 0.6 },
+                ]}
                 onPress={() => onReact(e.type)}
                 disabled={busy || selected}
               >
@@ -86,30 +91,30 @@ export function EmojiReactions({ goalId, canReact }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 10 },
+  container: { gap: 12 },
   counts: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   countPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 14,
-    backgroundColor: '#f1f5f9',
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    backgroundColor: palette.surface2,
   },
   countEmoji: { fontSize: 16 },
-  countNum: { fontSize: 13, fontWeight: '700', color: '#475569' },
-  picker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  countNum: { fontFamily: font.sansSemibold, fontSize: 13, color: palette.ink2 },
+  picker: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   pickBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: palette.line,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: palette.surface,
   },
-  pickBtnSelected: { borderColor: '#2563eb', backgroundColor: '#dbeafe' },
-  pickEmoji: { fontSize: 22 },
+  pickBtnSelected: { borderColor: palette.accent, backgroundColor: palette.accentSoft },
+  pickEmoji: { fontSize: 24 },
 });

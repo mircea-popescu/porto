@@ -1,14 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { DateField } from '@/components/date-field';
+import { Button } from '@/components/ui';
+import { font, palette, radius, shadow } from '@/constants/theme';
 import { confirmAction, notify } from '@/lib/dialog';
 import { addEntry, deleteEntry, listEntries, toISODate, updateEntry, ValueEntry } from '@/lib/goals';
 
@@ -117,7 +112,7 @@ export function ValueEntries({
   }
 
   if (loading) {
-    return <ActivityIndicator style={{ marginTop: 16 }} />;
+    return <ActivityIndicator style={{ marginTop: 16 }} color={palette.accent} />;
   }
 
   return (
@@ -128,7 +123,7 @@ export function ValueEntries({
           <TextInput
             style={styles.input}
             placeholder={unit ? `Valoare în ${unit} (ex. 8.3 sau -2)` : 'Valoare (ex. 8.3 sau -2)'}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={value}
             onChangeText={setValue}
             keyboardType="numbers-and-punctuation"
@@ -138,31 +133,28 @@ export function ValueEntries({
           <TextInput
             style={styles.input}
             placeholder="Notă (opțional)"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={note}
             onChangeText={setNote}
           />
           <View style={styles.row}>
-            <TouchableOpacity
-              style={[styles.btn, styles.btnGhost, { flex: 1 }]}
+            <Button
+              label="Anulează"
+              variant="ghost"
               onPress={() => setShowForm(false)}
               disabled={busy}
-            >
-              <Text style={styles.btnGhostText}>Anulează</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.btn, styles.btnPrimary, { flex: 1 }, busy && styles.disabled]}
+              style={{ flex: 1 }}
+            />
+            <Button
+              label={editingId ? 'Salvează' : 'Adaugă'}
               onPress={save}
               disabled={busy}
-            >
-              <Text style={styles.btnPrimaryText}>{editingId ? 'Salvează' : 'Adaugă'}</Text>
-            </TouchableOpacity>
+              style={{ flex: 1 }}
+            />
           </View>
         </View>
       ) : (
-        <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={openAdd}>
-          <Text style={styles.btnPrimaryText}>+ Adaugă intrare</Text>
-        </TouchableOpacity>
+        <Button label="+ Adaugă intrare" onPress={openAdd} />
       )}
 
       {entries.length === 0 ? (
@@ -181,12 +173,12 @@ export function ValueEntries({
                 {e.note ? ` · ${e.note}` : ''}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => openEdit(e)} disabled={busy} style={styles.entryAction}>
+            <Pressable onPress={() => openEdit(e)} disabled={busy} style={styles.entryAction}>
               <Text style={styles.editText}>Editează</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => remove(e)} disabled={busy} style={styles.entryAction}>
+            </Pressable>
+            <Pressable onPress={() => remove(e)} disabled={busy} style={styles.entryAction}>
               <Text style={styles.deleteText}>Șterge</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ))
       )}
@@ -196,43 +188,43 @@ export function ValueEntries({
 
 const styles = StyleSheet.create({
   form: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: palette.surface2,
+    borderRadius: radius.card,
+    padding: 16,
     gap: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
-  formTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  formTitle: { fontFamily: font.sansSemibold, fontSize: 15, color: palette.ink },
   input: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderColor: palette.line,
+    borderRadius: radius.input,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#fff',
+    fontFamily: font.sans,
+    fontSize: 15,
+    color: palette.ink,
+    backgroundColor: palette.surface,
+    ...shadow.sm,
   },
   row: { flexDirection: 'row', gap: 10 },
-  btn: { borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  btnPrimary: { backgroundColor: '#2563eb' },
-  btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  btnGhost: { borderWidth: 1, borderColor: '#cbd5e1', backgroundColor: '#fff' },
-  btnGhostText: { color: '#334155', fontSize: 15, fontWeight: '600' },
-  disabled: { opacity: 0.5 },
-  empty: { color: '#94a3b8', fontSize: 14, textAlign: 'center', marginTop: 8 },
+  empty: {
+    fontFamily: font.sansMedium,
+    color: palette.ink3,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
+  },
   entryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: palette.line,
   },
-  entryValue: { fontSize: 16, fontWeight: '600', color: '#0f172a' },
-  entryMeta: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
+  entryValue: { fontFamily: font.sansSemibold, fontSize: 16, color: palette.ink },
+  entryMeta: { fontFamily: font.sansMedium, fontSize: 12, color: palette.ink3, marginTop: 2 },
   entryAction: { paddingHorizontal: 6, paddingVertical: 4 },
-  editText: { color: '#2563eb', fontSize: 13, fontWeight: '600' },
-  deleteText: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
+  editText: { fontFamily: font.sansSemibold, color: palette.accent, fontSize: 13 },
+  deleteText: { fontFamily: font.sansSemibold, color: palette.danger, fontSize: 13 },
 });

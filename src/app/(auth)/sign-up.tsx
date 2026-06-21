@@ -1,7 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -9,11 +8,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/ui';
+import { font, palette, radius, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
 
 // Trebuie să corespundă constrângerii profiles_username_format din DB.
@@ -79,7 +79,7 @@ export default function SignUp() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -90,14 +90,14 @@ export default function SignUp() {
           <TextInput
             style={styles.input}
             placeholder="Nume afișat (ex. Andrei Popescu)"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={displayName}
             onChangeText={setDisplayName}
           />
           <TextInput
             style={styles.input}
             placeholder="Username (ex. andrei_p)"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={username}
             onChangeText={(t) => setUsername(t.toLowerCase())}
             autoCapitalize="none"
@@ -106,7 +106,7 @@ export default function SignUp() {
           <TextInput
             style={styles.input}
             placeholder="Parolă (min. 6 caractere)"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={palette.ink4}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -114,17 +114,13 @@ export default function SignUp() {
             autoComplete="new-password"
           />
 
-          <TouchableOpacity
-            style={[styles.button, submitting && styles.buttonDisabled]}
+          <Button
+            label="Creează cont"
             onPress={onSubmit}
             disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Creează cont</Text>
-            )}
-          </TouchableOpacity>
+            loading={submitting}
+            style={{ marginTop: 8 }}
+          />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Ai deja cont? </Text>
@@ -139,7 +135,7 @@ export default function SignUp() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, backgroundColor: palette.bg },
   flex: { flex: 1 },
   container: {
     flexGrow: 1,
@@ -148,32 +144,25 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontFamily: font.serif,
+    fontSize: 30,
     textAlign: 'center',
-    color: '#2563eb',
+    color: palette.ink,
     marginBottom: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
+    borderColor: palette.line,
+    borderRadius: radius.input,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
     paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
+    fontFamily: font.sans,
+    fontSize: 15,
+    color: palette.ink,
+    backgroundColor: palette.surface,
+    ...shadow.sm,
   },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
-  footerText: { color: '#64748b' },
-  link: { color: '#2563eb', fontWeight: '600' },
+  footerText: { fontFamily: font.sans, color: palette.ink3 },
+  link: { fontFamily: font.sansSemibold, color: palette.accent },
 });

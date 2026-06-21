@@ -1,30 +1,20 @@
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProgressBar } from '@/components/progress-bar';
+import { Avatar, Button, Card } from '@/components/ui';
+import { font, palette } from '@/constants/theme';
 import { notify } from '@/lib/dialog';
 import { GoalWithProgress, listUnits, Unit, unitLabel } from '@/lib/goals';
-import {
-  follow,
-  getProfile,
-  getUserPublicGoals,
-  isFollowing,
-  Profile,
-  unfollow,
-} from '@/lib/social';
+import { follow, getProfile, getUserPublicGoals, isFollowing, Profile, unfollow } from '@/lib/social';
 
 export default function UserProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [goals, setGoals] = useState<GoalWithProgress[]>([]);
@@ -73,38 +63,40 @@ export default function UserProfile() {
 
   if (loading || !profile) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator size="large" color={palette.accent} />
       </View>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: profile.display_name }} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{profile.display_name.charAt(0).toUpperCase()}</Text>
-          </View>
+    <View style={styles.screen}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={24} color={palette.ink} />
+        </Pressable>
+      </View>
+
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 32 }]}>
+        <View style={styles.headerBlock}>
+          <Avatar name={profile.display_name} size={84} />
           <Text style={styles.name}>{profile.display_name}</Text>
           <Text style={styles.username}>@{profile.username}</Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.followBtn, followingUser && styles.followingBtn, busy && styles.disabled]}
+        <Button
+          label={followingUser ? 'Nu mai urmări' : 'Urmărește'}
+          variant={followingUser ? 'ghost' : 'primary'}
           onPress={onToggleFollow}
           disabled={busy}
-        >
-          <Text style={[styles.followText, followingUser && styles.followingText]}>
-            {followingUser ? 'Nu mai urmări' : 'Urmărește'}
-          </Text>
-        </TouchableOpacity>
+        />
 
         {!followingUser ? (
-          <Text style={styles.locked}>
-            Urmărește acest user ca să-i vezi goalurile publice.
-          </Text>
+          <Text style={styles.locked}>Urmărește acest user ca să-i vezi goalurile publice.</Text>
         ) : goals.length === 0 ? (
           <Text style={styles.locked}>Nu are goaluri publice momentan.</Text>
         ) : (
@@ -126,7 +118,7 @@ export default function UserProfile() {
           </View>
         )}
       </ScrollView>
-    </>
+    </View>
   );
 }
 
@@ -147,15 +139,17 @@ function FriendGoalCard({
       : `${formatNum(progress)} / ${formatNum(goal.target_value ?? 0)} ${unit}`.trim();
 
   return (
-    <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={onPress}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {goal.title}
-        </Text>
-        <Text style={styles.cardPct}>{Math.round(ratio * 100)}%</Text>
-      </View>
-      <ProgressBar ratio={ratio} />
-      <Text style={styles.cardDetail}>{detail}</Text>
+    <Pressable style={({ pressed }) => [pressed && { opacity: 0.6 }]} onPress={onPress}>
+      <Card style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {goal.title}
+          </Text>
+          <Text style={styles.cardPct}>{Math.round(ratio * 100)}%</Text>
+        </View>
+        <ProgressBar ratio={ratio} />
+        <Text style={styles.cardDetail}>{detail}</Text>
+      </Card>
     </Pressable>
   );
 }
@@ -165,49 +159,39 @@ function formatNum(n: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, gap: 16 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { alignItems: 'center', gap: 6 },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#dbeafe',
-    alignItems: 'center',
-    justifyContent: 'center',
+  screen: { flex: 1, backgroundColor: palette.bg },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  topBar: { paddingHorizontal: 12, paddingBottom: 4 },
+  backBtn: { width: 36, height: 36, alignItems: 'flex-start', justifyContent: 'center' },
+  container: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
+  headerBlock: { alignItems: 'center', gap: 8, marginBottom: 4 },
+  name: { fontFamily: font.serif, fontSize: 24, color: palette.ink, marginTop: 4 },
+  username: { fontFamily: font.sansMedium, fontSize: 14, color: palette.ink3 },
+  locked: {
+    fontFamily: font.sans,
+    fontSize: 15,
+    color: palette.ink3,
+    textAlign: 'center',
+    marginTop: 16,
+    lineHeight: 22,
   },
-  avatarText: { fontSize: 30, fontWeight: '700', color: '#2563eb' },
-  name: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
-  username: { fontSize: 14, color: '#64748b' },
-  followBtn: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  followingBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#cbd5e1' },
-  followText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  followingText: { color: '#334155' },
-  disabled: { opacity: 0.5 },
-  locked: { fontSize: 15, color: '#64748b', textAlign: 'center', marginTop: 16, lineHeight: 22 },
-  goalList: { gap: 10 },
+  goalList: { gap: 10, marginTop: 8 },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748b',
+    fontFamily: font.sansSemibold,
+    fontSize: 12,
+    letterSpacing: 0.48,
+    color: palette.ink3,
     textTransform: 'uppercase',
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  card: { padding: 18, gap: 10 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  cardTitle: {
+    fontFamily: font.sansSemibold,
+    fontSize: 16,
+    color: palette.ink,
+    flex: 1,
+    marginRight: 8,
   },
-  cardPressed: { opacity: 0.6 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: '#0f172a', flex: 1, marginRight: 8 },
-  cardPct: { fontSize: 14, fontWeight: '700', color: '#2563eb' },
-  cardDetail: { fontSize: 13, color: '#64748b' },
+  cardPct: { fontFamily: font.serif, fontSize: 22, color: palette.accent },
+  cardDetail: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink3 },
 });
