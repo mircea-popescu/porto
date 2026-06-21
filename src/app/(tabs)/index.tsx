@@ -30,6 +30,7 @@ export default function Home() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const displayName =
     (session?.user.user_metadata?.display_name as string | undefined)?.split(' ')[0] ?? null;
@@ -48,8 +49,12 @@ export default function Home() {
     useCallback(() => {
       let active = true;
       setLoading(true);
+      setError(null);
       load()
-        .catch((err) => console.warn('listGoals:', err.message))
+        .catch((err) => {
+          console.warn('listGoals:', err.message);
+          if (active) setError(errText(err));
+        })
         .finally(() => {
           if (active) setLoading(false);
         });
@@ -58,6 +63,17 @@ export default function Home() {
       };
     }, [load]),
   );
+
+  // Reîncercare manuală după o eroare (ex. request expirat pe rețea proastă).
+  async function retry() {
+    setLoading(true);
+    setError(null);
+    await load().catch((err) => {
+      console.warn('listGoals:', err.message);
+      setError(errText(err));
+    });
+    setLoading(false);
+  }
 
   async function onRefresh() {
     setRefreshing(true);
@@ -69,6 +85,23 @@ export default function Home() {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator size="large" color={palette.accent} />
+      </View>
+    );
+  }
+
+  // Dacă încărcarea a eșuat (ex. request expirat / rețea proastă), arătăm un mesaj
+  // recuperabil în loc de spinner infinit sau de ecran „gol" înșelător.
+  if (error) {
+    return (
+      <View style={[styles.screen, styles.center, { paddingHorizontal: 32, gap: 16 }]}>
+        <Ionicons name="cloud-offline-outline" size={48} color={palette.ink4} />
+        <Text style={styles.empty}>
+          Nu am putut încărca datele. Verifică conexiunea și încearcă din nou.
+        </Text>
+        <Text style={styles.errorDetail} selectable>
+          {error}
+        </Text>
+        <Button label="Reîncearcă" onPress={retry} />
       </View>
     );
   }
@@ -177,6 +210,16 @@ function formatNum(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
+// Detaliu diagnostic afișat pe ecranul de eroare: numele + mesajul erorii.
+// Un timeout apare ca „AbortError"; o eroare Supabase/auth aduce mesajul ei.
+// Astfel, dacă încărcarea tot eșuează, un singur screenshot spune exact ce a picat.
+function errText(err: unknown): string {
+  if (err instanceof Error) {
+    return err.name && err.name !== 'Error' ? `${err.name}: ${err.message}` : err.message;
+  }
+  return String(err);
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: palette.bg },
   container: { paddingHorizontal: 18, gap: 16 },
@@ -189,6 +232,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: 'center',
     marginTop: 32,
+  },
+  errorDetail: {
+    fontFamily: font.sans,
+    fontSize: 12,
+    color: palette.ink4,
+    textAlign: 'center',
+    lineHeight: 17,
   },
   section: { gap: 10 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },

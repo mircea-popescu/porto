@@ -84,14 +84,19 @@ function RootNavigator() {
   useEffect(() => {
     if (loading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const seg = segments[0] ?? '';
+    const inAuth = seg === '(auth)';
+    const inTabs = seg === '(tabs)';
+    // Stack screens above the tab layer that are valid destinations with an active session.
+    const inStack = ['goal', 'user', 'widget-settings'].includes(seg);
 
-    if (!session && !inAuthGroup) {
-      // Neautentificat în afara zonei de auth → la login.
-      router.replace('/(auth)/sign-in');
-    } else if (session && inAuthGroup) {
-      // Autentificat dar pe ecranele de auth → în aplicație.
-      router.replace('/(tabs)');
+    if (!session) {
+      // Neautentificat pe orice ecran în afara zone de auth → la login.
+      if (!inAuth) router.replace('/(auth)/sign-in');
+    } else {
+      // Autentificat: redirecționăm spre tabs dacă suntem pe ecranul index tranzitoriu
+      // sau pe ecranele de auth (nu și dacă suntem deja pe tabs sau pe un ecran de detaliu).
+      if (!inTabs && !inStack) router.replace('/(tabs)');
     }
   }, [session, loading, segments, router]);
 
