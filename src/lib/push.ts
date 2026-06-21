@@ -22,8 +22,12 @@ function getProjectId(): string | undefined {
  * în `user_devices` (multi-device, §9.3 / §14 dec. 22).
  * No-op pe web și pe emulatoare (Expo Push cere device fizic).
  * Sigur de apelat de mai multe ori (upsert pe expo_push_token).
+ *
+ * `userId` se primește din sesiunea deja rezolvată — NU apelăm `supabase.auth.getUser()`
+ * aici, fiindcă re-intrarea în lock-ul de auth (când funcția e declanșată din
+ * `onAuthStateChange` / `getSession`) blochează rezolvarea sesiunii pe React Native.
  */
-export async function registerForPushNotifications(): Promise<string | null> {
+export async function registerForPushNotifications(userId: string): Promise<string | null> {
   if (Platform.OS === 'web') return null;
   if (!Device.isDevice) return null;
 
@@ -49,9 +53,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
   const token = tokenResp.data;
   if (!token) return null;
 
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr) throw userErr;
-  const userId = userData.user?.id;
   if (!userId) return null;
 
   const platform: DevicePlatform = Platform.OS === 'ios' ? 'ios' : 'android';
