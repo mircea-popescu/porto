@@ -15,7 +15,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+/**
+ * Plasă de siguranță: niciun request Supabase (query sau refresh de token) nu poate
+ * rămâne în aer la nesfârșit. Fără asta, un refresh care nu se mai întoarce blochează
+ * `getSession()`, deci toate query-urile, deci ecranul rămâne în loading infinit.
+ * 30s e generos — nu taie request-uri lente reale, doar pe cele cu adevărat blocate.
+ */
+const REQUEST_TIMEOUT_MS = 30000;
+function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  // Respectă și semnalul de abort propriu al lui supabase-js (ex. `.abortSignal()`).
+  if (init.signal) {
+    if (init.signal.aborted) controller.abort();
+    else init.signal.addEventListener('abort', () => controller.abort());
+  }
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: fetchWithTimeout },
   auth: {
     // Sesiunea (refresh token) e ținută în AsyncStorage — patternul oficial
     // Supabase pentru Expo/React Native.
