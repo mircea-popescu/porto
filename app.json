@@ -12,7 +12,10 @@
       "bundleIdentifier": "app.porto.habit",
       "supportsTablet": true,
       "entitlements": {
-        "com.apple.security.application-groups": ["group.app.porto.habit"]
+        "com.apple.security.application-groups": [
+          "group.app.porto.habit",
+          "group.app.porto.habit"
+        ]
       }
     },
     "android": {
@@ -50,7 +53,9 @@
           "widgets": [
             {
               "name": "PortoGoals",
-              "supportedFamilies": ["systemMedium"],
+              "supportedFamilies": [
+                "systemMedium"
+              ],
               "displayName": "Porto Goals",
               "description": "Urmărește goalurile tale",
               "contentMarginsDisabled": false
@@ -80,6 +85,36 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "app.porto.habit.ExpoWidgetsTarget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.app.porto.habit"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "7e219475-e5cb-484e-902c-4f19e90c7d52"
+      }
+    },
+    "owner": "mircea21",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7e219475-e5cb-484e-902c-4f19e90c7d52"
     }
   }
 }
