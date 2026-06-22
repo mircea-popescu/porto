@@ -42,10 +42,12 @@ export default function ProfileScreen() {
     };
   }, [session]);
 
-  // Statistici reale derivate din goaluri: obiceiuri, total zile ținute, publice.
-  const totalDays = goals
+  // Statistici reale derivate din goaluri: obiceiuri, cea mai lungă serie, publice.
+  // „zile la rând" = goalul zilnic cu cele mai multe zile (nu suma — o zi nu se
+  // numără de mai multe ori peste goaluri).
+  const longestStreak = goals
     .filter((g) => g.type === 'daily')
-    .reduce((sum, g) => sum + (g.progress ?? 0), 0);
+    .reduce((max, g) => Math.max(max, g.progress ?? 0), 0);
   const publicCount = goals.filter((g) => g.is_public).length;
 
   async function onSignOut() {
@@ -85,7 +87,7 @@ export default function ProfileScreen() {
 
       <View style={styles.statRow}>
         <StatTile value={goals.length} label="obiceiuri" color={palette.accent} />
-        <StatTile value={totalDays} label="zile ținute" color={palette.flameInk} />
+        <StatTile value={longestStreak} label="zile la rând" color={palette.flameInk} />
         <StatTile value={publicCount} label="publice" color={palette.ok} />
       </View>
 

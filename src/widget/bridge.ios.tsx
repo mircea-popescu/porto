@@ -10,7 +10,9 @@ import { createWidget } from 'expo-widgets';
 import { goalDetail, goalPct, WidgetData, WidgetGoal } from '@/widget/types';
 
 const portoGoalsWidget = createWidget<WidgetData>('PortoGoals', (props) => {
-  const { goals } = props;
+  // Widget-ul medium iOS are dimensiune fixă — afișăm primele 3 (Android, redimensionabil,
+  // le arată pe toate). Lista completă rămâne salvată în WidgetData.
+  const goals = props.goals.slice(0, 3);
 
   return (
     <VStack alignment="leading" spacing={10} modifiers={[padding({ all: 16 })]}>
