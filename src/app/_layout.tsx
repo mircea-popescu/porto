@@ -8,11 +8,13 @@ import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import type { Session } from '@supabase/supabase-js';
 
+import { PortoIntro } from '@/components/porto-intro';
 import { palette } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/context/auth';
 import { supabase } from '@/lib/supabase';
@@ -116,6 +118,38 @@ function RootNavigator() {
   );
 }
 
+/**
+ * Decide când rulează intro-ul „Porto”: la deschiderea app-ului cu sesiune activă
+ * (cold start) și la un login proaspăt (sesiune null → activă). Nu se joacă pe
+ * ecranul de login și nu se dublează pe restaurarea sesiunii la pornire.
+ */
+function IntroGate() {
+  const { session, loading } = useAuth();
+  const [visible, setVisible] = useState(false);
+  const initialDone = useRef(false);
+  const prevSession = useRef<Session | null>(null);
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (!initialDone.current) {
+      // Prima rezolvare a sesiunii (cold start).
+      initialDone.current = true;
+      prevSession.current = session;
+      if (session) setVisible(true);
+      return;
+    }
+
+    // După rezolvarea inițială: login proaspăt = tranziție null → sesiune.
+    const was = prevSession.current;
+    prevSession.current = session;
+    if (!was && session) setVisible(true);
+  }, [session, loading]);
+
+  if (!visible) return null;
+  return <PortoIntro onDone={() => setVisible(false)} />;
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Fraunces_600SemiBold,
@@ -136,6 +170,7 @@ export default function RootLayout() {
         <ThemeProvider value={navTheme}>
           <AuthProvider>
             <RootNavigator />
+            <IntroGate />
           </AuthProvider>
           <StatusBar style="dark" />
         </ThemeProvider>
