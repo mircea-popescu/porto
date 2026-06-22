@@ -10,16 +10,22 @@
 // Notă: înregistrăm milestone-ul (milestones_sent) pentru orice goal atins, dar
 // trimitem friend_milestone DOAR pentru goalurile publice (§5.1).
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { sendExpoPush, PushMessage } from '../_shared/push.ts'
+import { capToLimit, MAX_PUSH_PER_RUN, sendExpoPush, PushMessage } from '../_shared/push.ts'
+import { forbidden, isAuthorizedCaller } from '../_shared/auth.ts'
 
 const FUNCTION_NAME = 'milestone-checker'
 
-async function logError(supabase: SupabaseClient, message: string, context?: Record<string, unknown>) {
+async function logError(
+  supabase: SupabaseClient,
+  message: string,
+  context?: Record<string, unknown>,
+  severity: 'info' | 'warning' | 'error' | 'critical' = 'error',
+) {
   await supabase.from('error_logs').insert({
     function_name: FUNCTION_NAME,
     error_message: message,
     context: context ?? null,
-    severity: 'error',
+    severity,
   }).throwOnError().catch(() => {})
 }
 
@@ -75,7 +81,10 @@ function milestoneLabel(key: string): string {
   return key
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Doar cron/service_role poate declanșa fan-out-ul (anti-spam, §6).
+  if (!isAuthorizedCaller(req)) return forbidden()
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -193,6 +202,17 @@ Deno.serve(async (_req) => {
 
     if (messages.length === 0) {
       return new Response(JSON.stringify({ new_milestones: fresh.length, sent: 0 }), { status: 200 })
+    }
+
+    // Plafon de siguranță pe fan-out (mesaje + meta rămân aliniate).
+    const dropped = capToLimit(messages, meta)
+    if (dropped > 0) {
+      await logError(
+        supabase,
+        `Fan-out plafonat la ${MAX_PUSH_PER_RUN}: ${dropped} notificări omise.`,
+        { dropped, max: MAX_PUSH_PER_RUN },
+        'warning',
+      )
     }
 
     const tickets = await sendExpoPush(messages)

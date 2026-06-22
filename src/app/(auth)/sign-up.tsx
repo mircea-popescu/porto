@@ -19,6 +19,19 @@ import { useAuth } from '@/context/auth';
 // Trebuie să corespundă constrângerii profiles_username_format din DB.
 const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
 
+// Trebuie să corespundă politicii de parolă din supabase/config.toml:
+// minimum_password_length = 8 + password_requirements = "lower_upper_letters_digits".
+const PASSWORD_MIN = 8;
+function passwordProblem(password: string): string | null {
+  if (password.length < PASSWORD_MIN) {
+    return `Parola trebuie să aibă minim ${PASSWORD_MIN} caractere.`;
+  }
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    return 'Parola trebuie să conțină litere mici, litere mari și cifre.';
+  }
+  return null;
+}
+
 export default function SignUp() {
   const { signUp } = useAuth();
   const router = useRouter();
@@ -34,7 +47,8 @@ export default function SignUp() {
     if (!USERNAME_RE.test(username.trim().toLowerCase())) {
       return 'Username-ul: 3–30 caractere, doar litere mici, cifre și „_”.';
     }
-    if (password.length < 6) return 'Parola trebuie să aibă minim 6 caractere.';
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) return pwProblem;
     return null;
   }
 
@@ -105,7 +119,7 @@ export default function SignUp() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Parolă (min. 6 caractere)"
+            placeholder="Parolă (min. 8: litere mari, mici și cifre)"
             placeholderTextColor={palette.ink4}
             value={password}
             onChangeText={setPassword}
