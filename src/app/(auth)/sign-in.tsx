@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui';
 import { font, palette, radius, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -43,7 +44,10 @@ export default function SignIn() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.container}>
-          <Text style={styles.brand}>Porto</Text>
+          <View style={[styles.blob, styles.blobTop]} />
+          <View style={[styles.blob, styles.blobBottom]} />
+
+          <BrandLogo size={52} />
           <Text style={styles.subtitle}>Bine ai revenit</Text>
 
           <TextInput
@@ -98,13 +102,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     justifyContent: 'center',
     gap: 12,
+    overflow: 'hidden',
   },
-  brand: {
-    fontFamily: font.serif,
-    fontSize: 44,
-    textAlign: 'center',
-    color: palette.ink,
+  blob: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 999,
   },
+  blobTop: { top: -90, right: -70, backgroundColor: 'rgba(255,77,109,0.16)' },
+  blobBottom: { bottom: -70, left: -80, backgroundColor: 'rgba(124,92,255,0.15)' },
   subtitle: {
     fontFamily: font.sansMedium,
     fontSize: 15,

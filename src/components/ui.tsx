@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -10,10 +11,10 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { font, palette, radius, shadow } from '@/constants/theme';
+import { font, gradientDir, gradients, palette, radius, shadow } from '@/constants/theme';
 
 /* -------------------------------------------------------------------------- */
-/* Primitive partajate, consumate de toate ecranele (design "Calm & Premium").*/
+/* Primitive partajate, consumate de toate ecranele (design "Porto Pulse").   */
 /* -------------------------------------------------------------------------- */
 
 /** Mic label uppercase muted, deasupra titlurilor de ecran. */
@@ -50,7 +51,7 @@ export function ScreenHeader({
   );
 }
 
-/** Card plutitor: surface + shadowSm + hairline opțional. */
+/** Card plutitor: surface + shadowSm + hairline. */
 export function Card({
   children,
   style,
@@ -85,6 +86,7 @@ export function Button({
   style?: StyleProp<ViewStyle>;
 }) {
   const isText = variant === 'dangerText' || variant === 'linkDiscreet';
+  const isGradient = variant === 'primary' || variant === 'success';
 
   return (
     <Pressable
@@ -93,8 +95,8 @@ export function Button({
       style={({ pressed }) => [
         !isText && styles.btnBase,
         variant === 'primary' && styles.btnPrimary,
-        variant === 'ghost' && styles.btnGhost,
         variant === 'success' && styles.btnSuccess,
+        variant === 'ghost' && styles.btnGhost,
         variant === 'dangerOutline' && styles.btnDangerOutline,
         (disabled || loading) && styles.btnDisabled,
         pressed && !isText && styles.btnPressed,
@@ -102,6 +104,20 @@ export function Button({
         style,
       ]}
     >
+      {isGradient && (
+        <LinearGradient
+          colors={
+            (variant === 'success' ? gradients.success : gradients.ember) as unknown as [
+              string,
+              string,
+            ]
+          }
+          locations={variant === 'success' ? undefined : gradients.emberLocations}
+          start={gradientDir.start}
+          end={gradientDir.end}
+          style={[StyleSheet.absoluteFill, styles.btnGradient]}
+        />
+      )}
       {loading ? (
         <ActivityIndicator color={variant === 'ghost' ? palette.accent : '#fff'} />
       ) : (
@@ -122,17 +138,70 @@ export function Button({
   );
 }
 
-/** Cerc cu inițială pe Fraunces. */
+/** Cerc cu inițială pe Fraunces, încadrat de un inel gradient „ember”. */
 export function Avatar({ name, size = 42 }: { name?: string | null; size?: number }) {
   const initial = (name?.trim()?.[0] ?? '?').toUpperCase();
+  const pad = Math.max(2, Math.round(size * 0.07));
   return (
-    <View
+    <LinearGradient
+      colors={gradients.ember as unknown as [string, string]}
+      locations={gradients.emberLocations}
+      start={gradientDir.start}
+      end={gradientDir.end}
       style={[
-        styles.avatar,
-        { width: size, height: size, borderRadius: size / 2 },
+        styles.avatarRing,
+        { width: size, height: size, borderRadius: size / 2, padding: pad },
       ]}
     >
-      <Text style={[styles.avatarText, { fontSize: Math.round(size * 0.42) }]}>{initial}</Text>
+      <View style={[styles.avatarInner, { borderRadius: size / 2 }]}>
+        <Text style={[styles.avatarText, { fontSize: Math.round(size * 0.4) }]}>{initial}</Text>
+      </View>
+    </LinearGradient>
+  );
+}
+
+/** Pilă de streak: flacără + număr, pe fundal cald. Semnătura „obicei viu”. */
+export function Flame({ label, style }: { label: string; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[styles.flame, style]}>
+      <Text style={styles.flameText}>🔥 {label}</Text>
+    </View>
+  );
+}
+
+/** Mică pilă de milestone / status (ex. „✓ Ziua 40”, „🎯 100”). */
+export function Tag({
+  children,
+  bg = palette.surface2,
+  color = palette.ink2,
+  style,
+}: {
+  children: ReactNode;
+  bg?: string;
+  color?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={[styles.tag, { backgroundColor: bg }, style]}>
+      <Text style={[styles.tagText, { color }]}>{children}</Text>
+    </View>
+  );
+}
+
+/** Cartonaș de statistică (profil): cifră mare colorată + etichetă. */
+export function StatTile({
+  value,
+  label,
+  color = palette.accent,
+}: {
+  value: ReactNode;
+  label: string;
+  color?: string;
+}) {
+  return (
+    <View style={styles.statTile}>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -164,12 +233,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   },
-  btnPrimary: {
-    backgroundColor: palette.accent,
-    ...shadow.accentBtn,
-  },
-  btnSuccess: { backgroundColor: palette.ok },
+  btnGradient: { borderRadius: radius.btn },
+  btnPrimary: { ...shadow.accentBtn },
+  btnSuccess: { ...shadow.successBtn },
   btnGhost: {
     backgroundColor: palette.surface,
     borderWidth: 1,
@@ -179,7 +247,7 @@ const styles = StyleSheet.create({
   btnDangerOutline: {
     backgroundColor: palette.surface,
     borderWidth: 1,
-    borderColor: palette.danger,
+    borderColor: palette.dangerLine,
   },
   btnDisabled: { opacity: 0.5 },
   btnPressed: { transform: [{ scale: 0.985 }] },
@@ -193,15 +261,53 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   txtLinkDiscreet: {
-    color: palette.ink4,
+    color: palette.ink3,
     fontSize: 14,
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
-  avatar: {
-    backgroundColor: palette.accentSoft,
+  avatarRing: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: palette.ember2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  avatarInner: {
+    flex: 1,
+    alignSelf: 'stretch',
+    backgroundColor: palette.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: { fontFamily: font.serif, color: palette.accentInk },
+  flame: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: palette.flameSoft2,
+  },
+  flameText: { fontFamily: font.sansSemibold, fontSize: 11.5, color: palette.flameInk },
+  tag: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  tagText: { fontFamily: font.sansSemibold, fontSize: 12.5 },
+  statTile: {
+    flex: 1,
+    backgroundColor: palette.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: palette.line,
+    paddingVertical: 14,
+    alignItems: 'center',
+    ...shadow.sm,
+  },
+  statValue: { fontFamily: font.serif, fontSize: 24 },
+  statLabel: { fontFamily: font.sansMedium, fontSize: 12, color: palette.ink3, marginTop: 2 },
 });

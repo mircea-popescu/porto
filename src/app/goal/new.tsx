@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -16,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateField } from '@/components/date-field';
 import { Button, Eyebrow, ScreenTitle } from '@/components/ui';
-import { font, palette, radius, shadow } from '@/constants/theme';
+import { font, gradientDir, gradients, palette, radius, shadow } from '@/constants/theme';
 import { notify } from '@/lib/dialog';
 import {
   Category,
@@ -55,6 +56,13 @@ export default function NewGoal() {
   const [unitCustom, setUnitCustom] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
+
+  // Props comune pentru glow-ul de focus violet pe inputuri.
+  const focusProps = (key: string) => ({
+    onFocus: () => setFocused(key),
+    onBlur: () => setFocused((f) => (f === key ? null : f)),
+  });
 
   useEffect(() => {
     Promise.all([listCategories(), listUnits()])
@@ -149,11 +157,12 @@ export default function NewGoal() {
 
         <Field label="Titlu">
           <TextInput
-            style={styles.input}
+            style={[styles.input, focused === 'title' && styles.inputFocus]}
             placeholder="ex. 100 de zile fără fumat"
             placeholderTextColor={palette.ink4}
             value={title}
             onChangeText={setTitle}
+            {...focusProps('title')}
           />
         </Field>
 
@@ -181,24 +190,26 @@ export default function NewGoal() {
         {type === 'daily' ? (
           <Field label="Câte zile (orizont)">
             <TextInput
-              style={styles.input}
+              style={[styles.input, focused === 'days' && styles.inputFocus]}
               placeholder="ex. 100"
               placeholderTextColor={palette.ink4}
               value={targetDays}
               onChangeText={setTargetDays}
               keyboardType="number-pad"
+              {...focusProps('days')}
             />
           </Field>
         ) : (
           <>
             <Field label="Valoare țintă">
               <TextInput
-                style={styles.input}
+                style={[styles.input, focused === 'value' && styles.inputFocus]}
                 placeholder="ex. 1000"
                 placeholderTextColor={palette.ink4}
                 value={targetValue}
                 onChangeText={setTargetValue}
                 keyboardType="decimal-pad"
+                {...focusProps('value')}
               />
             </Field>
 
@@ -216,12 +227,13 @@ export default function NewGoal() {
             </Field>
             {unitChoice === 'custom' && (
               <TextInput
-                style={styles.input}
+                style={[styles.input, focused === 'unitCustom' && styles.inputFocus]}
                 placeholder="ex. ședințe"
                 placeholderTextColor={palette.ink4}
                 value={unitCustom}
                 onChangeText={setUnitCustom}
                 autoCapitalize="none"
+                {...focusProps('unitCustom')}
               />
             )}
           </>
@@ -316,9 +328,24 @@ function Chip({
   onPress: () => void;
   children: string;
 }) {
+  if (active) {
+    return (
+      <Pressable onPress={onPress}>
+        <LinearGradient
+          colors={gradients.ember as unknown as [string, string]}
+          locations={gradients.emberLocations}
+          start={gradientDir.start}
+          end={gradientDir.end}
+          style={[styles.chip, styles.chipActive]}
+        >
+          <Text style={[styles.chipText, styles.chipTextActive]}>{children}</Text>
+        </LinearGradient>
+      </Pressable>
+    );
+  }
   return (
-    <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{children}</Text>
+    <Pressable style={styles.chip} onPress={onPress}>
+      <Text style={styles.chipText}>{children}</Text>
     </Pressable>
   );
 }
@@ -366,6 +393,14 @@ const styles = StyleSheet.create({
     backgroundColor: palette.surface,
     ...shadow.sm,
   },
+  inputFocus: {
+    borderColor: palette.accent,
+    shadowColor: palette.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 7,
+    elevation: 3,
+  },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 15,
@@ -375,7 +410,14 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
     backgroundColor: palette.surface,
   },
-  chipActive: { backgroundColor: palette.accent, borderColor: palette.accent },
+  chipActive: {
+    borderColor: 'transparent',
+    shadowColor: palette.ember3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 4,
+  },
   chipText: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink2 },
   chipTextActive: { color: '#fff' },
   segment: {

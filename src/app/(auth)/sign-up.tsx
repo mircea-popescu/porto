@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui';
 import { font, palette, radius, shadow } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -74,6 +75,10 @@ export default function SignUp() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <View style={[styles.blob, styles.blobTop]} />
+          <View style={[styles.blob, styles.blobBottom]} />
+
+          <BrandLogo size={44} />
           <Text style={styles.title}>Creează cont</Text>
 
           <TextInput
@@ -142,12 +147,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     justifyContent: 'center',
     gap: 12,
+    overflow: 'hidden',
   },
+  blob: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 999,
+  },
+  blobTop: { top: -90, right: -70, backgroundColor: 'rgba(255,77,109,0.16)' },
+  blobBottom: { bottom: -70, left: -80, backgroundColor: 'rgba(124,92,255,0.15)' },
   title: {
-    fontFamily: font.serif,
-    fontSize: 30,
+    fontFamily: font.sansMedium,
+    fontSize: 15,
     textAlign: 'center',
-    color: palette.ink,
+    color: palette.ink3,
+    marginTop: 6,
     marginBottom: 12,
   },
   input: {
