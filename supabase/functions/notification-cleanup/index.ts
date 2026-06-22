@@ -1,10 +1,14 @@
 // Șterge notificările mai vechi de 90 de zile (PRD §6.4).
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { forbidden, isAuthorizedCaller } from '../_shared/auth.ts'
 
 const FUNCTION_NAME = 'notification-cleanup'
 const RETENTION_DAYS = 90
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  // Doar cron/service_role poate rula cleanup-ul.
+  if (!isAuthorizedCaller(req)) return forbidden()
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
