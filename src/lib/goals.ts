@@ -57,9 +57,11 @@ export function unitLabel(
 
 /** Goalurile proprii, cu progres calculat live (view goals_with_progress). */
 export async function listGoals(): Promise<GoalWithProgress[]> {
+  const uid = await currentUserId();
   const { data, error } = await supabase
     .from('goals_with_progress')
     .select('*')
+    .eq('user_id', uid)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
