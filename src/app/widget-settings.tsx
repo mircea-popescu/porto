@@ -53,7 +53,6 @@ export default function WidgetSettings() {
   function toggleGoal(id: string) {
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 3) return prev;
       return [...prev, id];
     });
   }
@@ -85,8 +84,9 @@ export default function WidgetSettings() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.hint}>
-        Selectează până la 3 goaluri care să apară pe widget. Ordinea de selecție determină
-        ordinea în widget.
+        Selectează goalurile care să apară pe widget — ordinea de selecție e ordinea în widget.
+        Pe Android poți redimensiona widget-ul ca să le vezi pe toate; widget-ul mic arată
+        primele 3.
       </Text>
 
       {goals.length === 0 ? (

@@ -21,7 +21,9 @@ export async function getWidgetGoalIds(): Promise<string[]> {
 }
 
 export async function setWidgetGoalIds(ids: string[]): Promise<void> {
-  await AsyncStorage.setItem(WIDGET_GOAL_IDS_KEY, JSON.stringify(ids.slice(0, 3)));
+  // Fără plafon: pe Android widget-ul poate fi redimensionat ca să arate oricâte
+  // goaluri. (iOS afișează doar primele câteva — widget-ul medium e fix.)
+  await AsyncStorage.setItem(WIDGET_GOAL_IDS_KEY, JSON.stringify(ids));
 }
 
 function buildWidgetGoals(
