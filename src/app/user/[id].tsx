@@ -192,6 +192,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  cardPct: { fontFamily: font.serif, fontSize: 22, color: palette.accent },
+  cardPct: { fontFamily: font.serif, fontStyle: 'italic', fontSize: 22, color: palette.accent },
   cardDetail: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink3 },
 });

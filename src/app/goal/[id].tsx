@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmojiReactions } from '@/components/emoji-reactions';
 import { ProgressBar } from '@/components/progress-bar';
-import { Button, Card, Eyebrow } from '@/components/ui';
+import { Button, Card, Eyebrow, Flame, Tag } from '@/components/ui';
 import { ValueEntries } from '@/components/value-entries';
 import { categoryStyle } from '@/constants/categories';
 import { font, palette } from '@/constants/theme';
@@ -141,13 +141,18 @@ export default function GoalDetail() {
 
   const ratio = goal.progress_ratio ?? 0;
   const progress = goal.progress ?? 0;
-  const color = categoryStyle(categorySlug).color;
+  const catStyle = categoryStyle(categorySlug);
+  const color = catStyle.color;
   const unit = goal.type === 'value' ? unitLabel(goal, units) : '';
 
   const targetLabel =
     goal.type === 'daily'
       ? `${progress} / ${goal.target_days} zile`
       : `${progress} / ${goal.target_value} ${unit}`.trim();
+
+  // Pile de milestone derivate din date reale (multipli de 10 zile / decili la valoare).
+  const lastTenDays = Math.floor(progress / 10) * 10;
+  const lastDecile = Math.floor(Math.min(ratio, 1) * 10) * 10;
 
   return (
     <View style={styles.screen}>
@@ -172,9 +177,34 @@ export default function GoalDetail() {
         <View style={styles.progressBlock}>
           <View style={styles.progressRow}>
             <Text style={[styles.bigPct, { color }]}>{Math.round(ratio * 100)}%</Text>
-            <Text style={styles.target}>{targetLabel}</Text>
+            {goal.type === 'daily' && progress > 0 ? (
+              <View style={styles.progressMeta}>
+                <Flame label={`${progress} zile`} />
+                <Text style={styles.target}>{targetLabel}</Text>
+              </View>
+            ) : (
+              <Text style={styles.target}>{targetLabel}</Text>
+            )}
           </View>
-          <ProgressBar ratio={ratio} color={color} height={11} />
+          <ProgressBar ratio={ratio} gradient={catStyle.gradient} color={color} height={14} />
+
+          <View style={styles.tagRow}>
+            {goal.type === 'daily' ? (
+              <>
+                {lastTenDays >= 10 && (
+                  <Tag bg={palette.okSoft} color={palette.ok}>{`✓ Ziua ${lastTenDays}`}</Tag>
+                )}
+                <Tag>{`🎯 ${goal.target_days}`}</Tag>
+              </>
+            ) : (
+              lastDecile >= 10 && (
+                <Tag bg={palette.flameSoft1} color={palette.flameInk}>
+                  {`🎉 ai trecut de ${lastDecile}%`}
+                </Tag>
+              )
+            )}
+          </View>
+
           {goal.type === 'value' && goal.completed_in_days != null && (
             <Text style={styles.reached}>🎯 Target atins în {goal.completed_in_days} zile</Text>
           )}
@@ -285,9 +315,11 @@ const styles = StyleSheet.create({
   header: { gap: 6 },
   title: { fontFamily: font.serif, fontSize: 26, color: palette.ink },
   progressBlock: { gap: 12 },
-  progressRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  bigPct: { fontFamily: font.serif, fontSize: 34 },
+  progressRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  progressMeta: { alignItems: 'flex-end', gap: 6 },
+  bigPct: { fontFamily: font.serif, fontStyle: 'italic', fontSize: 48, lineHeight: 50 },
   target: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink3 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   reached: { fontFamily: font.sansSemibold, fontSize: 14, color: palette.ok },
   cardTitle: { fontFamily: font.sansSemibold, fontSize: 16, color: palette.ink },
   muted: { fontFamily: font.sans, fontSize: 14, color: palette.ink3, lineHeight: 20 },

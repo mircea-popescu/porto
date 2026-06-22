@@ -206,6 +206,19 @@ export async function getGoal(id: string): Promise<GoalWithProgress> {
   return data;
 }
 
+/**
+ * Set de goal_id-uri (Tip A) confirmate AZI de userul curent. RLS scopează la
+ * datele proprii. Folosit pe Home pentru hero-ul „X din Y confirmate azi”.
+ */
+export async function getConfirmedTodayGoalIds(): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('daily_confirmations')
+    .select('goal_id')
+    .eq('confirmed_date', todayISO());
+  if (error) throw error;
+  return new Set(data.map((r) => r.goal_id));
+}
+
 /** Datele confirmate (YYYY-MM-DD), sortate crescător. */
 export async function getConfirmedDates(goalId: string): Promise<string[]> {
   const { data, error } = await supabase

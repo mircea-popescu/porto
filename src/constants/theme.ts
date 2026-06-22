@@ -65,35 +65,65 @@ export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
 
 /* -------------------------------------------------------------------------- */
-/* Design system "Calm & Premium" (light-first, v1).                          */
-/* Toate ecranele consumă acești tokeni — fără hexuri hardcodate per screen.  */
+/* Design system "Porto Pulse" (light-first, v2).                             */
+/* Baza caldă premium rămâne; peste ea — un gradient-semnătură „ember”, accent */
+/* violet și progres luminos. Toate ecranele consumă acești tokeni.           */
 /* -------------------------------------------------------------------------- */
 
 export const palette = {
-  // Suprafețe
-  bg: '#FBFAF8',
+  // Suprafețe (hârtie caldă)
+  bg: '#FBF8F4',
   surface: '#FFFFFF',
-  surface2: '#F4F2EE',
-  line: '#ECE9E3',
+  surface2: '#F5F1EA',
+  line: '#ECE5D9',
   // Ink (text)
-  ink: '#1A1A18',
-  ink2: '#56544E',
-  ink3: '#8B887F',
-  ink4: '#B5B2A8',
-  // Accent (indigo profund)
-  accent: '#3D4EAD',
-  accentSoft: '#EAECF7',
-  accentInk: '#2C3A8A',
+  ink: '#1B1622',
+  ink2: '#675F73',
+  ink3: '#9A92A6',
+  ink4: '#C3BCCB',
+  // Accent (violet viu) — înlocuiește indigo-ul stins
+  accent: '#6C4CF1',
+  accentSoft: '#EDE8FF',
+  accentInk: '#4A2FD0',
+  // Stopuri gradient „ember” (coral → roz → violet)
+  ember1: '#FF7A59',
+  ember2: '#FF4D6D',
+  ember3: '#7C5CFF',
+  // Streak / flacără
+  flameInk: '#E0492F',
+  flameSoft1: '#FFF1E6',
+  flameSoft2: '#FFE5EC',
   // Semantice
-  ok: '#2F7A56',
-  okSoft: '#E5F0EA',
-  danger: '#B4453A',
+  ok: '#10B981',
+  okSoft: '#DCFAEC',
+  danger: '#EF4444',
+  dangerSoft: '#FDE7E7',
+  dangerLine: '#F3C9C9',
+} as const;
+
+/**
+ * Gradiente ca tupluri de culori pentru `expo-linear-gradient`.
+ * `ember` e semnătura (CTA primary, hero, avatar ring); fiecare categorie are
+ * propriul gradient (mapat în constants/categories.ts).
+ */
+export const gradients = {
+  ember: ['#FF7A59', '#FF4D6D', '#7C5CFF'] as const,
+  emberLocations: [0, 0.52, 1] as const,
+  emberSoft: ['#FFE7DE', '#FFE0E8', '#EAE4FF'] as const,
+  success: ['#15C58C', '#10B981'] as const,
+  flame: ['#FFF1E6', '#FFE5EC'] as const,
+} as const;
+
+/** Direcția standard a gradientelor (diagonală caldă). */
+export const gradientDir = {
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
 } as const;
 
 export const radius = {
-  card: 18,
-  btn: 14,
-  input: 12,
+  card: 20,
+  btn: 16,
+  input: 14,
   pill: 999,
 } as const;
 
@@ -120,13 +150,21 @@ export const shadow = {
     shadowRadius: 40,
     elevation: 8,
   },
-  /** Tentă de accent, pentru butonul primary. */
+  /** Glow ember sub butonul primary / elementele semnătură. */
   accentBtn: {
-    shadowColor: '#3D4EAD',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowColor: '#FF4D6D',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  /** Glow verde sub butonul de succes (confirmare). */
+  successBtn: {
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.32,
+    shadowRadius: 18,
+    elevation: 6,
   },
 } as const;
 

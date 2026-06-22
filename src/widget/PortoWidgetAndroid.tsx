@@ -48,6 +48,9 @@ export function PortoWidgetAndroid({ goals }: { goals: WidgetGoal[] }) {
         height: 'match_parent',
         width: 'match_parent',
         backgroundColor: BG,
+        // Rotunjește uniform toate colțurile fondului (fără asta, dreptunghiul alb
+        // are colțuri pătrate — pe unele lansatoare doar stânga părea rotunjită).
+        borderRadius: 24,
         padding: 14,
         flexDirection: 'column',
         justifyContent: 'flex-start',

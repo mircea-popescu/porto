@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Eyebrow, ScreenTitle } from '@/components/ui';
-import { font, palette, radius, shadow } from '@/constants/theme';
+import { font, gradientDir, gradients, palette, radius, shadow } from '@/constants/theme';
 import { notify } from '@/lib/dialog';
 import { listFollowing, Profile, searchUsers } from '@/lib/social';
 
@@ -69,6 +70,13 @@ export default function SearchScreen() {
             style={({ pressed }) => [styles.searchBtn, pressed && { opacity: 0.85 }]}
             onPress={onSearch}
           >
+            <LinearGradient
+              colors={gradients.ember as unknown as [string, string]}
+              locations={gradients.emberLocations}
+              start={gradientDir.start}
+              end={gradientDir.end}
+              style={[StyleSheet.absoluteFill, { borderRadius: radius.input }]}
+            />
             <Ionicons name="search" size={20} color="#fff" />
           </Pressable>
         </View>

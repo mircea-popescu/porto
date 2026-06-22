@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmojiReactions } from '@/components/emoji-reactions';
 import { ProgressBar } from '@/components/progress-bar';
-import { Eyebrow } from '@/components/ui';
+import { Eyebrow, Flame } from '@/components/ui';
 import { font, palette } from '@/constants/theme';
 import { notify } from '@/lib/dialog';
 import { getGoal, GoalWithProgress, listUnits, Unit, unitLabel } from '@/lib/goals';
@@ -72,9 +72,16 @@ export default function FriendGoalView() {
         <View style={styles.progressBlock}>
           <View style={styles.progressRow}>
             <Text style={styles.bigPct}>{Math.round(ratio * 100)}%</Text>
-            <Text style={styles.target}>{targetLabel}</Text>
+            {goal.type === 'daily' && progress > 0 ? (
+              <View style={styles.progressMeta}>
+                <Flame label={`${progress} zile`} />
+                <Text style={styles.target}>{targetLabel}</Text>
+              </View>
+            ) : (
+              <Text style={styles.target}>{targetLabel}</Text>
+            )}
           </View>
-          <ProgressBar ratio={ratio} height={11} />
+          <ProgressBar ratio={ratio} height={14} />
           {goal.type === 'value' && goal.completed_in_days != null && (
             <Text style={styles.reached}>🎯 Target atins în {goal.completed_in_days} zile</Text>
           )}
@@ -97,8 +104,9 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
   title: { fontFamily: font.serif, fontSize: 26, color: palette.ink },
   progressBlock: { gap: 12 },
-  progressRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  bigPct: { fontFamily: font.serif, fontSize: 34, color: palette.accent },
+  progressRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  progressMeta: { alignItems: 'flex-end', gap: 6 },
+  bigPct: { fontFamily: font.serif, fontStyle: 'italic', fontSize: 48, lineHeight: 50, color: palette.accent },
   target: { fontFamily: font.sansMedium, fontSize: 13, color: palette.ink3 },
   reached: { fontFamily: font.sansSemibold, fontSize: 14, color: palette.ok },
   reactBlock: { gap: 12 },
