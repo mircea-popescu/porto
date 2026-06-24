@@ -1,14 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Button, Card, Eyebrow, ScreenTitle, StatTile } from '@/components/ui';
 import { font, palette } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
+import { confirmAction, notify } from '@/lib/dialog';
 import { GoalWithProgress, listGoals } from '@/lib/goals';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
+
+/** URL public al politicii de confidențialitate (Google Play + GDPR). */
+const PRIVACY_URL = 'https://mircea-popescu.github.io/porto-legal/privacy';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -58,6 +62,24 @@ export default function ProfileScreen() {
     }
   }
 
+  async function onDeleteAccount() {
+    const ok = await confirmAction(
+      'Șterge contul',
+      'Contul tău și toate datele (goaluri, urmăriri, reacții) vor fi șterse definitiv. Acțiunea nu poate fi anulată.',
+      'Șterge definitiv',
+      true,
+    );
+    if (!ok) return;
+    try {
+      const { error } = await supabase.functions.invoke('delete-account');
+      if (error) throw error;
+      // Contul nu mai există → ieșim din sesiune (redirect spre login).
+      await signOut().catch(() => {});
+    } catch (err) {
+      notify('Eroare', 'Nu am putut șterge contul: ' + (err as Error).message);
+    }
+  }
+
   if (loading) {
     return (
       <View style={[styles.screen, styles.center]}>
@@ -101,7 +123,15 @@ export default function ProfileScreen() {
         onPress={() => router.push('/widget-settings')}
       />
 
+      <Button
+        label="Politica de confidențialitate"
+        variant="ghost"
+        onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
+      />
+
       <Button label="Deconectează-te" variant="dangerOutline" onPress={onSignOut} />
+
+      <Button label="Șterge contul" variant="dangerOutline" onPress={onDeleteAccount} />
     </ScrollView>
   );
 }
