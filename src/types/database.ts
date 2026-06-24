@@ -631,6 +631,8 @@ export type Database = {
         | "value_inactivity"
         | "milestone_achieved"
         | "friend_milestone"
+        | "new_follower"
+        | "emoji_reaction"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -772,6 +774,8 @@ export const Constants = {
         "value_inactivity",
         "milestone_achieved",
         "friend_milestone",
+        "new_follower",
+        "emoji_reaction",
       ],
     },
   },

@@ -19,6 +19,7 @@
     },
     "android": {
       "package": "app.porto.habit",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#FF4D6D",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

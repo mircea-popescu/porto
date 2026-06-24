@@ -34,36 +34,63 @@ const navTheme = {
   },
 };
 
-/** Tratează tap-ul pe o notificare friend_milestone: deep-link în goalul prietenului. */
+/**
+ * Tratează tap-ul pe o notificare push: deep-link către ținta potrivită.
+ *   new_follower    → profilul celui care a dat follow
+ *   emoji_reaction  → goalul propriu pe care s-a primit reacția
+ *   friend_milestone (legacy, fără `kind`) → goalul prietenului
+ */
 function useNotificationDeepLink() {
   const router = useRouter();
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
+    async function markOpened(
+      me: string,
+      type: 'new_follower' | 'emoji_reaction' | 'friend_milestone',
+      goalId?: string,
+    ) {
+      // Engagement tracking (§6.4): marchează notificarea ca deschisă.
+      let q = supabase
+        .from('notifications')
+        .update({ opened_at: new Date().toISOString() })
+        .eq('user_id', me)
+        .eq('type', type)
+        .is('opened_at', null);
+      if (goalId) q = q.eq('goal_id', goalId);
+      await q.then(() => {}, () => {});
+    }
+
     async function handleResponse(response: Notifications.NotificationResponse | null) {
       const data = response?.notification.request.content.data as
-        | { goalId?: string; ownerId?: string }
+        | { kind?: string; goalId?: string; ownerId?: string; actorId?: string }
         | undefined;
-      if (!data?.goalId || !data?.ownerId) return;
+      if (!data) return;
 
-      router.push({
-        pathname: '/user/[id]/goal/[goalId]',
-        params: { id: data.ownerId, goalId: data.goalId },
-      });
-
-      // Engagement tracking (§6.4): marchează notificarea ca deschisă.
       const { data: userData } = await supabase.auth.getUser();
       const me = userData.user?.id;
-      if (me) {
-        await supabase
-          .from('notifications')
-          .update({ opened_at: new Date().toISOString() })
-          .eq('user_id', me)
-          .eq('goal_id', data.goalId)
-          .eq('type', 'friend_milestone')
-          .is('opened_at', null)
-          .then(() => {}, () => {});
+
+      if (data.kind === 'new_follower' && data.actorId) {
+        router.push({ pathname: '/user/[id]', params: { id: data.actorId } });
+        if (me) await markOpened(me, 'new_follower');
+        return;
+      }
+
+      if (data.kind === 'emoji_reaction' && data.goalId) {
+        // Reacție pe goalul propriu → îl deschid în ecranul meu de goal.
+        router.push({ pathname: '/goal/[id]', params: { id: data.goalId } });
+        if (me) await markOpened(me, 'emoji_reaction', data.goalId);
+        return;
+      }
+
+      // Legacy / friend_milestone: goalul prietenului.
+      if (data.goalId && data.ownerId) {
+        router.push({
+          pathname: '/user/[id]/goal/[goalId]',
+          params: { id: data.ownerId, goalId: data.goalId },
+        });
+        if (me) await markOpened(me, 'friend_milestone', data.goalId);
       }
     }
 
