@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { categoryStyle } from '@/constants/categories';
 import { notify } from '@/lib/dialog';
@@ -21,6 +22,9 @@ import {
 
 export default function WidgetSettings() {
   const router = useRouter();
+  // Edge-to-edge: butonul „Salvează" de la finalul listei nu trebuie să intre
+  // sub bara de navigare de sistem.
+  const insets = useSafeAreaInsets();
   const [goals, setGoals] = useState<GoalWithProgress[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -82,7 +86,9 @@ export default function WidgetSettings() {
   const catMap = new Map(categories.map((c) => [c.id, c]));
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
+    >
       <Text style={styles.hint}>
         Selectează goalurile care să apară pe widget — ordinea de selecție e ordinea în widget.
         Pe Android poți redimensiona widget-ul ca să le vezi pe toate; widget-ul mic arată
