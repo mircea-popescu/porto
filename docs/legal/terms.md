@@ -44,4 +44,4 @@ acceptarea lor.
 
 ## 8. Contact
 
-Pentru întrebări: **mircea.popescu@solo.ro**.
+Pentru întrebări: **mircea.popescu23.05@gmail.com**.

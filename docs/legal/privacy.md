@@ -8,7 +8,7 @@ politică explică ce date colectăm, de ce, și ce drepturi ai.
 ## Cine este operatorul de date
 
 Aplicația Porto, dezvoltată de Mircea Popescu. Pentru orice solicitare privind
-datele tale, contactează: **mircea.popescu@solo.ro**.
+datele tale, contactează: **mircea.popescu23.05@gmail.com**.
 
 ## Ce date colectăm
 
@@ -71,4 +71,4 @@ versiune.
 
 ## Contact
 
-Pentru orice întrebare privind confidențialitatea: **mircea.popescu@solo.ro**.
+Pentru orice întrebare privind confidențialitatea: **mircea.popescu23.05@gmail.com**.
