@@ -223,10 +223,9 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-# Dezactivat: fără SMTP custom, sender-ul built-in Supabase e plafonat la câteva
-# emailuri/oră (shared), ceea ce dădea „email rate limit exceeded" la signup.
-# Faza 1/2 nu cere verificare de email (PRD §7). Reactivează după configurarea SMTP.
-enable_confirmations = false
+# Reactivat (2026-07): cloud-ul are SMTP custom (Brevo) configurat în dashboard,
+# deci rate-limit-ul sender-ului shared Supabase nu mai e o problemă.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
